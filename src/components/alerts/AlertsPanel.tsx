@@ -4,6 +4,7 @@ import { useAlerts } from '../../alerts/context'
 import { describeFreshness, type AlertRecord, type Basin } from '../../alerts/types'
 import { formatStamp } from '../../alerts/evaluate'
 import { TRANSPORTS } from '../../alerts/transport'
+import { THRESHOLD } from '../../data/model'
 import { intensityLabel, type StormCategory } from '../../data/storms'
 import { EASE } from '../../motion'
 import './AlertsPanel.css'
@@ -184,7 +185,7 @@ export default function AlertsPanel() {
                   />
                   <div className="field__scale">
                     <span className="label">0.30</span>
-                    <span className="label field__scale-mark">model threshold 0.57</span>
+                    <span className="label field__scale-mark">model threshold {THRESHOLD}</span>
                     <span className="label">0.99</span>
                   </div>
                 </div>
@@ -340,7 +341,7 @@ function AlertCard({ record }: { record: AlertRecord }) {
             />
             <span
               className="card__prob-threshold"
-              style={{ left: `${(record.threshold ?? 0.57) * 100}%` }}
+              style={{ left: `${(record.threshold ?? THRESHOLD) * 100}%` }}
             />
           </div>
           <span className="card__prob-value readout">{record.probability.toFixed(3)}</span>

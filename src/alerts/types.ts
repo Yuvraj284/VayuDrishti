@@ -1,3 +1,4 @@
+import { THRESHOLD } from '../data/model'
 import type { Storm, StormCategory } from '../data/storms'
 
 /* ───────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ export const DEFAULT_PREFERENCES: AlertPreferences = {
   criteria: {
     onDetection: true,
     // Defaults to the model's own locked decision threshold.
-    minProbability: 0.57,
+    minProbability: THRESHOLD,
     minCategory: 'CS',
     basins: ['Bay of Bengal', 'Arabian Sea'],
     includeOfficial: true,

@@ -157,8 +157,11 @@ export default function Analytics() {
                 </header>
                 <p className="err__body">
                   Cyclonic conditions the model missed. The consequential error class for
-                  operational use — a missed system costs more than a false alarm, which
-                  is why the threshold sits below 0.5 on the precision side.
+                  operational use — a missed system costs more than a false alarm. The
+                  operating threshold is {THRESHOLD}: raising it generally increases
+                  precision and decreases recall, trading missed systems for fewer false
+                  alarms, while lowering it generally increases recall and decreases
+                  precision, catching more systems at the cost of more false alarms.
                 </p>
                 <div className="err__bar">
                   <motion.span
