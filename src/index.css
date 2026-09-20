@@ -1,0 +1,213 @@
+/* ═══════════════════════════════════════════════════
+   VAYUDRISHTI — GLOBAL DESIGN SYSTEM
+   Typography: Instrument Serif · Inter · IBM Plex Mono
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  /* ── Palette ── */
+  --bg:          #08090d;
+  --bg-deep:     #050608;
+  --bg-surface:  rgba(14, 16, 24, 0.72);
+  --bg-raised:   rgba(18, 22, 34, 0.85);
+  --border:      rgba(255, 255, 255, 0.06);
+  --border-dim:  rgba(255, 255, 255, 0.03);
+
+  /* Atmospheric accent — used SPARINGLY */
+  --atmo:        #8ab4c8;       /* blue-grey, not cyan */
+  --atmo-dim:    rgba(138, 180, 200, 0.35);
+  --atmo-ghost:  rgba(138, 180, 200, 0.08);
+
+  /* Data / status */
+  --data-warm:   #c8a87a;       /* amber — storm intensity values */
+  --data-cool:   #7ab0c8;       /* cool blue — pressure / position */
+  --positive:    #6db08a;
+  --negative:    #c87a7a;
+  --warn:        #c8a87a;
+
+  /* ── Text ── */
+  --text-1:  rgba(240, 242, 248, 0.96);   /* primary */
+  --text-2:  rgba(190, 198, 218, 0.72);   /* secondary */
+  --text-3:  rgba(140, 155, 185, 0.45);   /* tertiary */
+  --text-4:  rgba(100, 120, 155, 0.30);   /* ghost */
+
+  /* ── Typography ── */
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-ui:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:    'IBM Plex Mono', 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ── Type Scale ── */
+  --text-xs:   0.625rem;   /* 10px */
+  --text-sm:   0.75rem;    /* 12px */
+  --text-base: 0.875rem;   /* 14px */
+  --text-md:   1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  2rem;       /* 32px */
+  --text-4xl:  2.75rem;    /* 44px */
+  --text-5xl:  3.75rem;    /* 60px */
+  --text-6xl:  5rem;       /* 80px */
+
+  /* ── Space ── */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+
+  /* ── Radii ── */
+  --r-sm: 3px;
+  --r-md: 6px;
+  --r-lg: 10px;
+
+  /* ── Motion ── */
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:   cubic-bezier(0.7, 0, 0.84, 0);
+  --t-fast:    140ms var(--ease-out);
+  --t-base:    280ms var(--ease-out);
+  --t-slow:    560ms var(--ease-out);
+
+  /* ── Z-layers ── */
+  --z-base:    1;
+  --z-nav:     100;
+  --z-overlay: 200;
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text-1);
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(138, 180, 200, 0.15); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(138, 180, 200, 0.28); }
+
+/* ── Selection ── */
+::selection {
+  background: rgba(138, 180, 200, 0.2);
+  color: var(--text-1);
+}
+
+/* ── Base elements ── */
+a {
+  color: var(--atmo);
+  text-decoration: none;
+  transition: color var(--t-fast);
+}
+a:hover { color: var(--text-1); }
+
+button {
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* Display headings use serif */
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+h2, h3 {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+h4, h5, h6 {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ── Utilities ── */
+.mono { font-family: var(--font-mono); }
+.serif { font-family: var(--font-display); }
+.text-1 { color: var(--text-1); }
+.text-2 { color: var(--text-2); }
+.text-3 { color: var(--text-3); }
+.text-atmo { color: var(--atmo); }
+.text-warm { color: var(--data-warm); }
+
+/* ── Backward-compat aliases (Predict / Analytics pages still use old names) ── */
+:root {
+  --bg-primary:       var(--bg);
+  --bg-secondary:     var(--bg-deep);
+  --bg-tertiary:      rgba(14, 18, 28, 0.9);
+  --bg-card:          var(--bg-surface);
+  --bg-card-hover:    var(--bg-raised);
+  --bg-glass:         var(--bg-surface);
+  --bg-glass-border:  var(--border);
+  --cyan-primary:     var(--atmo);
+  --cyan-dim:         var(--atmo-dim);
+  --cyan-glow:        var(--atmo-ghost);
+  --teal-primary:     var(--positive);
+  --teal-dim:         rgba(109, 176, 138, 0.4);
+  --text-primary:     var(--text-1);
+  --text-secondary:   var(--text-2);
+  --text-tertiary:    var(--text-3);
+  --text-accent:      var(--atmo);
+  --font-sans:        var(--font-ui);
+  --space-xs:         var(--sp-1);
+  --space-sm:         var(--sp-2);
+  --space-md:         var(--sp-4);
+  --space-lg:         var(--sp-6);
+  --space-xl:         var(--sp-10);
+  --space-2xl:        var(--sp-16);
+  --space-3xl:        var(--sp-24);
+  --radius-sm:        var(--r-sm);
+  --radius-md:        var(--r-md);
+  --radius-lg:        var(--r-lg);
+  --radius-xl:        12px;
+  --ease-out-expo:    var(--ease-out);
+  --transition-fast:  var(--t-fast);
+  --transition-normal: var(--t-base);
+  --transition-slow:  var(--t-slow);
+}
+
+/* ── Subtle film grain overlay ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}

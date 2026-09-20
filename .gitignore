@@ -1,0 +1,96 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist
+dist-ssr
+build/
+*.local
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.keystore
+secrets/
+secrets.json
+credentials.json
+service-account*.json
+*.secret
+
+# Model checkpoints & weights
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.hdf5
+*.onnx
+*.pkl
+*.joblib
+*.safetensors
+checkpoints/
+weights/
+models/
+
+# Datasets
+*.nc
+*.nc4
+*.grib
+*.grib2
+*.hdf
+*.hdf5
+*.tif
+*.tiff
+*.npy
+*.npz
+*.parquet
+*.feather
+data/
+datasets/
+
+# Caches
+.cache/
+.parcel-cache/
+.vite/
+node_modules/.vite
+.eslintcache
+.stylelintcache
+.turbo/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
