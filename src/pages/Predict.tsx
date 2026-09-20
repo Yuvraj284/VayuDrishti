@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import Nav from '../components/layout/Nav'
 import FieldTile from '../components/data/FieldTile'
 import { ARCHITECTURE, ARCH_SHAPES, CHANNELS, MODEL_CONFIG, THRESHOLD } from '../data/model'
-import { INPUT_SAMPLES, loadSample } from '../data/samples'
+import {
+  CHANNEL_ORDER,
+  F32_BYTES,
+  GRID_SHAPE,
+  GridValidationError,
+  parseGridFile,
+  type ParsedGrid,
+} from '../data/inputGrid'
 import { API_CONFIGURED, runInference, type InferenceResult } from '../lib/inferenceClient'
 import { EASE, inView, reveal, stagger } from '../motion'
 import './Predict.css'
@@ -15,9 +22,12 @@ export default function Predict() {
   const [error, setError] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [epoch, setEpoch] = useState(0)
-  const [sampleId, setSampleId] = useState(INPUT_SAMPLES[0].id)
 
-  const sample = INPUT_SAMPLES.find((s) => s.id === sampleId) ?? INPUT_SAMPLES[0]
+  // The loaded input window. Parsing and validation happen here, before any
+  // request, so a malformed file never costs an API call.
+  const [input, setInput] = useState<ParsedGrid | null>(null)
+  const [inputError, setInputError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   // Null until a real inference has returned — the page never shows a
   // placeholder number that could be mistaken for a prediction.
@@ -26,14 +36,34 @@ export default function Predict() {
   const isCyclone = result?.is_cyclone ?? false
   const margin = result?.margin ?? null
 
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return
+    setInputError(null)
+    setError(null)
+    setResult(null)
+    try {
+      const parsed = await parseGridFile(file)
+      setInput(parsed)
+      setEpoch((e) => e + 1)
+    } catch (err) {
+      setInput(null)
+      setInputError(
+        err instanceof GridValidationError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'could not read that file',
+      )
+    }
+  }
+
   const handleInference = async () => {
+    if (!input) return
     setIsRunning(true)
     setError(null)
     try {
-      const grid = await loadSample(sample)
-      const res = await runInference(grid, `${sample.id}-${Date.now()}`)
+      const res = await runInference(input.grid, `${input.fileName}-${Date.now()}`)
       setResult(res)
-      setEpoch((e) => e + 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'inference failed')
       setResult(null)
@@ -104,9 +134,9 @@ export default function Predict() {
               </div>
 
               <p className="bench__note">
-                Mock fields at the grid&apos;s native 80 × 80 resolution. Channel-to-variable
-                mapping is indicative; the authoritative ordering comes from the training
-                artefacts.
+                Illustrative fields at the grid&apos;s native 80 × 80 resolution — they
+                preview the channel layout, not the loaded window. The codes, units and
+                order are the model&apos;s own, taken from the checkpoint&apos;s variable list.
               </p>
             </div>
           </motion.section>
@@ -193,29 +223,71 @@ export default function Predict() {
                   </span>
                 </div>
 
-                {/* The browser cannot synthesise a real meteorological window, so
-                    inference runs on archived windows from the held-out test split
-                    rather than on the procedural field previews above. */}
+                {/* The model needs one real [10, 80, 80] window of physical
+                    values. The field previews above are procedural decoration,
+                    so the window has to come from the user. */}
                 <div className="sample-pick">
                   <span className="row__label">Input window</span>
-                  <div className="chips" role="group" aria-label="Input sample">
-                    {INPUT_SAMPLES.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className={`chip ${sampleId === s.id ? 'chip--on' : ''}`}
-                        onClick={() => setSampleId(s.id)}
-                        aria-pressed={sampleId === s.id}
-                        disabled={isRunning}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="sample-pick__note">
-                    Held-out test split · ground truth{' '}
-                    {sample.trueLabel === 1 ? 'cyclone' : 'non-cyclone'}. {sample.note}
-                  </span>
+
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept=".npy,.f32,.bin,.raw,.json,application/json,application/octet-stream"
+                    className="file-input"
+                    id="input-grid-file"
+                    onChange={(e) => {
+                      void handleFile(e.target.files?.[0])
+                      e.target.value = ''
+                    }}
+                    disabled={isRunning}
+                  />
+                  <label htmlFor="input-grid-file" className="file-pick">
+                    <span className="file-pick__cta">Choose input file</span>
+                    <span className="file-pick__hint">
+                      .npy · raw float32 · .json — [{GRID_SHAPE.join(', ')}]
+                    </span>
+                  </label>
+
+                  {input && (
+                    <div className="file-meta">
+                      <div className="kv">
+                        <span className="kv__k">File</span>
+                        <span className="kv__v">{input.fileName}</span>
+                      </div>
+                      <div className="kv">
+                        <span className="kv__k">Format</span>
+                        <span className="kv__v">
+                          {input.format} · {input.bytes.toLocaleString()} B
+                        </span>
+                      </div>
+                      <div className="kv">
+                        <span className="kv__k">Value range</span>
+                        <span className="kv__v">
+                          {input.min.toFixed(2)} … {input.max.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="kv">
+                        <span className="kv__k">Masked cells</span>
+                        <span className="kv__v">{input.nanCount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {inputError && (
+                    <p className="infer-msg infer-msg--error" role="alert">
+                      <span className="infer-msg__tag">Invalid input</span>
+                      {inputError}
+                    </p>
+                  )}
+
+                  {!input && !inputError && (
+                    <span className="sample-pick__note">
+                      Raw physical values in channel order{' '}
+                      <code>{CHANNEL_ORDER.join(', ')}</code>. Raw float32 must be exactly{' '}
+                      {F32_BYTES.toLocaleString()} bytes; NaN marks a masked cell and is
+                      filled server-side with the channel&apos;s training mean.
+                    </span>
+                  )}
                 </div>
 
                 {!API_CONFIGURED && (
@@ -236,11 +308,11 @@ export default function Predict() {
                 <button
                   className={`run ${isRunning ? 'run--busy' : ''}`}
                   onClick={handleInference}
-                  disabled={isRunning || !API_CONFIGURED}
+                  disabled={isRunning || !API_CONFIGURED || !input}
                   id="btn-run-inference"
                 >
                   <span className="run__label">
-                    {isRunning ? 'Running inference' : 'Run inference'}
+                    {isRunning ? 'Running inference' : input ? 'Run inference' : 'Load an input window'}
                   </span>
                   <span className="run__tag">live</span>
                   {isRunning && <span className="run__progress" />}

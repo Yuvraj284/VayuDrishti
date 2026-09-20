@@ -69,18 +69,30 @@ export interface Channel {
   ramp: [string, string]
 }
 
+/**
+ * The ten channels the network was actually trained on, in the order recorded
+ * in the checkpoint's `variables` list. This order is load-bearing: the network
+ * cannot detect a permutation and would return a confident wrong answer, so the
+ * inference service cross-checks it against the checkpoint before serving.
+ *
+ * Sources: TRMM (precipitation), CCMP (winds), GridSat-B1 (infrared, water
+ * vapour and visible).
+ */
 export const CHANNELS: Channel[] = [
-  { code: 'SST', name: 'Sea surface temperature', unit: 'K', ramp: ['#13243f', '#d8a06a'] },
-  { code: 'MSLP', name: 'Mean sea-level pressure', unit: 'hPa', ramp: ['#0d1e38', '#9fd0e4'] },
-  { code: 'U850', name: 'Zonal wind · 850 hPa', unit: 'm s⁻¹', ramp: ['#102a3a', '#5ecfe0'] },
-  { code: 'V850', name: 'Meridional wind · 850 hPa', unit: 'm s⁻¹', ramp: ['#132038', '#78c6d8'] },
-  { code: 'U200', name: 'Zonal wind · 200 hPa', unit: 'm s⁻¹', ramp: ['#161f3c', '#8fb6e0'] },
-  { code: 'V200', name: 'Meridional wind · 200 hPa', unit: 'm s⁻¹', ramp: ['#181d38', '#a3b8e4'] },
-  { code: 'RH700', name: 'Relative humidity · 700 hPa', unit: '%', ramp: ['#0e2230', '#6fd3c0'] },
-  { code: 'VORT850', name: 'Relative vorticity · 850 hPa', unit: 's⁻¹', ramp: ['#241a30', '#c79ae0'] },
-  { code: 'OLR', name: 'Outgoing longwave radiation', unit: 'W m⁻²', ramp: ['#0b1526', '#e2e8f2'] },
-  { code: 'TCWV', name: 'Total column water vapour', unit: 'kg m⁻²', ramp: ['#0f2136', '#63b9d8'] },
+  { code: 'precipitation', name: 'Precipitation rate · TRMM', unit: 'mm h⁻¹', ramp: ['#0e2230', '#6fd3c0'] },
+  { code: 'uwnd', name: 'Zonal wind · CCMP', unit: 'm s⁻¹', ramp: ['#102a3a', '#5ecfe0'] },
+  { code: 'vwnd', name: 'Meridional wind · CCMP', unit: 'm s⁻¹', ramp: ['#132038', '#78c6d8'] },
+  { code: 'ws', name: 'Wind speed · CCMP', unit: 'm s⁻¹', ramp: ['#161f3c', '#8fb6e0'] },
+  { code: 'nobs', name: 'Observation count · CCMP', unit: 'count', ramp: ['#181d38', '#a3b8e4'] },
+  { code: 'irwin_cdr', name: 'IR window brightness temperature', unit: 'K', ramp: ['#13243f', '#d8a06a'] },
+  { code: 'irwin_2', name: 'IR window · second view', unit: 'K', ramp: ['#1a2036', '#e0a066'] },
+  { code: 'irwvp', name: 'Water-vapour brightness temperature', unit: 'K', ramp: ['#0d1e38', '#9fd0e4'] },
+  { code: 'irwvp_2', name: 'Water vapour · second view', unit: 'K', ramp: ['#0f2136', '#63b9d8'] },
+  { code: 'vschn', name: 'Visible reflectance · GridSat', unit: 'reflectance', ramp: ['#0b1526', '#e2e8f2'] },
 ]
+
+/** Channel codes alone, in model order. The single source of truth. */
+export const CHANNEL_CODES = CHANNELS.map((c) => c.code)
 
 /** Model configuration rows. */
 export const MODEL_CONFIG: [string, string][] = [

@@ -19,16 +19,20 @@ type Structure = 'low' | 'high' | 'dipole-u' | 'dipole-v' | 'spiral'
 
 /** Which spatial signature each channel shows at the centre of the window. */
 const STRUCTURE: Record<string, Structure> = {
-  SST: 'high',
-  MSLP: 'low',
-  U850: 'dipole-u',
-  V850: 'dipole-v',
-  U200: 'dipole-v',
-  V200: 'dipole-u',
-  RH700: 'high',
-  VORT850: 'spiral',
-  OLR: 'low',
-  TCWV: 'high',
+  // Precipitation organises into spiral rainbands.
+  precipitation: 'spiral',
+  // Winds show a dipole across the circulation centre.
+  uwnd: 'dipole-u',
+  vwnd: 'dipole-v',
+  ws: 'high',
+  nobs: 'high',
+  // Brightness temperature is LOW where cloud tops are cold and high.
+  irwin_cdr: 'low',
+  irwin_2: 'low',
+  irwvp: 'low',
+  irwvp_2: 'low',
+  // Deep cloud is bright in the visible band.
+  vschn: 'high',
 }
 
 function hash(x: number, y: number, s: number): number {

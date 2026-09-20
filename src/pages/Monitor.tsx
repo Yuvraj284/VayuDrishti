@@ -118,9 +118,19 @@ export default function Monitor() {
       })
       mapRef.current = map
 
-      L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-        attribution: '© Stadia Maps © OpenMapTiles © OpenStreetMap',
-        maxZoom: 18,
+      // Esri's dark canvas serves without a client key. Stadia now returns 401
+      // on every tile for unregistered origins, and CARTO stamps keyless tiles
+      // with an "API KEY REQUIRED" watermark. Note the {z}/{y}/{x} order, which
+      // is Esri's, not the usual {z}/{x}/{y}.
+      const ESRI = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas'
+      L.tileLayer(`${ESRI}/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, {
+        attribution: 'Tiles © Esri — Esri, DeLorme, NAVTEQ',
+        maxZoom: 16,
+      }).addTo(map)
+
+      // Place names ship as a separate overlay for this basemap.
+      L.tileLayer(`${ESRI}/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, {
+        maxZoom: 16,
       }).addTo(map)
 
       L.control.zoom({ position: 'bottomright' }).addTo(map)

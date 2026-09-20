@@ -376,7 +376,9 @@
 }
 
 /* Pull the basemap toward the product's navy without touching the vector
-   overlays, which live in a separate Leaflet pane. */
+   overlays, which live in a separate Leaflet pane. CARTO's dark style is
+   already dark, so this is a gentle tint rather than the heavy darkening the
+   previous provider needed. */
 .leaflet-tile-pane {
-  filter: brightness(0.82) saturate(0.62) sepia(0.22) hue-rotate(168deg);
+  filter: sepia(0.5) saturate(1.1) hue-rotate(178deg) brightness(0.78) contrast(1.05);
 }
