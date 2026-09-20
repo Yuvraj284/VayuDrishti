@@ -1,0 +1,124 @@
+.track-plot {
+  width: 100%;
+  background: #04101d;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.track-plot__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ── Base map ── */
+.track-plot__grid line {
+  stroke: rgba(126, 170, 206, 0.07);
+  stroke-width: 1;
+}
+
+.track-plot__land path {
+  fill: #0a1725;
+  stroke: none;
+}
+
+.track-plot__coast path {
+  fill: none;
+  stroke: rgba(126, 170, 206, 0.34);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.track-plot__ticks text {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: rgba(126, 170, 206, 0.30);
+  letter-spacing: 0.06em;
+}
+
+/* ── Tracks ── */
+.track-plot__guide {
+  fill: none;
+  stroke: rgba(180, 214, 234, 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.track-plot__track--clickable { cursor: pointer; }
+.track-plot__track--dim .track-plot__guide { stroke: rgba(180, 214, 234, 0.08); }
+.track-plot__track { transition: opacity var(--t-base); }
+
+.track-plot__landfall circle:first-child {
+  fill: none;
+  stroke: #e4685c;
+  stroke-width: 1.2;
+  opacity: 0.7;
+}
+.track-plot__landfall circle:last-child { fill: #e4685c; }
+
+.track-plot__name {
+  font-family: var(--serif);
+  font-size: 21px;
+  fill: var(--ink-1);
+  letter-spacing: 0.01em;
+}
+.track-plot__year {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--ink-3);
+  letter-spacing: 0.1em;
+}
+
+/* ── Reference points ── */
+.track-plot__refs circle { fill: rgba(191, 238, 245, 0.6); }
+.track-plot__refs text {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: rgba(188, 210, 232, 0.44);
+  letter-spacing: 0.08em;
+}
+
+/* Intensity key, rendered alongside the plot by the consuming page */
+.track-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding-top: 14px;
+}
+.track-key__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 0.5875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.track-key__swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  flex: none;
+}
+
+/* Label halo — keeps names legible where they cross a track or coastline */
+.track-plot__name {
+  paint-order: stroke;
+  stroke: #04101d;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.track-plot__leader {
+  stroke: rgba(180, 214, 234, 0.35);
+  stroke-width: 1;
+}
+.track-plot__refs text {
+  paint-order: stroke;
+  stroke: #04101d;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}

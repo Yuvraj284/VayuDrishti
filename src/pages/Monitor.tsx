@@ -1,400 +1,357 @@
-import { useState, useEffect, useRef } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import Navbar from '../components/navigation/Navbar'
+import type * as Leaflet from 'leaflet'
+import Nav from '../components/layout/Nav'
+import { ktColor } from '../components/data/TrackPlot'
+import { STORMS, fixLabel, intensityLabel, peakKt, strength, type Storm } from '../data/storms'
+import { THRESHOLD } from '../data/model'
+import { INSPECT_KEYS } from '../three/cameraPresets'
+import { EASE, reveal, stagger } from '../motion'
 import './Monitor.css'
 
-// ── Historical storm data ──────────────────────────────────────────────────
-const STORMS = [
-  {
-    id: 'BOB-03-2013',
-    name: 'Phailin',
-    basin: 'Bay of Bengal',
-    year: 2013,
-    cat: 'ESCS',
-    vmax: '115 kt',
-    mslp: '940 hPa',
-    prob: 0.967,
-    status: 'Landfall',
-    // IBTrACS approximate track — [lat, lon, intensity_kt]
-    track: [
-      [8.5, 94.0, 35],
-      [9.2, 92.8, 45],
-      [10.1, 91.5, 55],
-      [10.8, 90.2, 70],
-      [11.6, 89.0, 85],
-      [12.4, 88.0, 100],
-      [13.0, 87.2, 110],
-      [13.8, 86.5, 115],
-      [14.1, 85.8, 115],
-      [14.3, 85.0, 110],
-      [14.5, 84.2, 100],
-      [14.5, 83.5, 85], // landfall
-    ],
-    landfall: [14.5, 83.5],
-  },
-  {
-    id: 'ARB-04-2014',
-    name: 'Nilofar',
-    basin: 'Arabian Sea',
-    year: 2014,
-    cat: 'ESCS',
-    vmax: '100 kt',
-    mslp: '950 hPa',
-    prob: 0.912,
-    status: 'Dissipated',
-    track: [
-      [13.0, 65.0, 35],
-      [14.5, 64.2, 55],
-      [16.0, 63.5, 75],
-      [17.5, 62.8, 90],
-      [19.0, 62.2, 100],
-      [20.5, 62.0, 95],
-      [22.0, 62.5, 80],
-      [23.5, 63.5, 60],
-    ],
-    landfall: null,
-  },
-  {
-    id: 'ARB-02-2015',
-    name: 'Chapala',
-    basin: 'Arabian Sea',
-    year: 2015,
-    cat: 'VSCS',
-    vmax: '120 kt',
-    mslp: '940 hPa',
-    prob: 0.943,
-    status: 'Landfall',
-    track: [
-      [11.5, 60.0, 35],
-      [12.0, 58.5, 55],
-      [12.8, 57.2, 80],
-      [13.5, 56.0, 100],
-      [14.0, 54.5, 115],
-      [14.5, 53.5, 120],
-      [15.2, 52.5, 110],
-      [15.8, 51.5, 90],  // Yemen landfall
-    ],
-    landfall: [15.8, 51.5],
-  },
-  {
-    id: 'BOB-01-2016',
-    name: 'Roanu',
-    basin: 'Bay of Bengal',
-    year: 2016,
-    cat: 'CS',
-    vmax: '45 kt',
-    mslp: '983 hPa',
-    prob: 0.781,
-    status: 'Landfall',
-    track: [
-      [6.0, 83.0, 30],
-      [7.5, 83.5, 35],
-      [9.5, 83.8, 38],
-      [11.5, 84.2, 42],
-      [13.0, 84.8, 45],
-      [15.0, 85.5, 45],
-      [17.0, 86.2, 40],
-      [19.0, 87.0, 35],
-      [20.0, 87.5, 30],  // Bangladesh landfall
-    ],
-    landfall: [20.0, 87.5],
-  },
-  {
-    id: 'ARB-05-2017',
-    name: 'Ockhi',
-    basin: 'Arabian Sea',
-    year: 2017,
-    cat: 'VSCS',
-    vmax: '85 kt',
-    mslp: '976 hPa',
-    prob: 0.889,
-    status: 'Dissipated',
-    track: [
-      [7.5, 80.0, 35],
-      [7.8, 78.5, 50],
-      [8.5, 76.8, 65],
-      [9.5, 74.5, 75],
-      [10.5, 72.0, 80],
-      [12.0, 69.5, 85],
-      [14.0, 67.0, 75],
-      [16.0, 65.5, 60],
-    ],
-    landfall: null,
-  },
-]
+const StormCanvas = lazy(() => import('../three/StormCanvas'))
 
-const reveal = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (d: number) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] },
-  }),
-}
-
-type Storm = typeof STORMS[0]
+type LeafletNS = typeof import('leaflet')
 
 export default function Monitor() {
   const [selected, setSelected] = useState<Storm>(STORMS[0])
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<unknown>(null)
-  const trackLayerRef = useRef<unknown>(null)
-  const markersRef = useRef<unknown[]>([])
+  const [fix, setFix] = useState<number | null>(null)
 
-  useEffect(() => {
-    // Dynamic import of Leaflet to avoid SSR issues
-    let L: typeof import('leaflet')
-    let map: ReturnType<typeof import('leaflet').map>
+  const mapHostRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<Leaflet.Map | null>(null)
+  const leafletRef = useRef<LeafletNS | null>(null)
+  const trackGroupRef = useRef<Leaflet.LayerGroup | null>(null)
+  const fixMarkerRef = useRef<Leaflet.CircleMarker | null>(null)
 
-    const initMap = async () => {
-      const leaflet = await import('leaflet')
-      L = leaflet.default ?? leaflet
+  /* ── Draw one storm's best track ─────────────────────────────────────── */
+  const drawStorm = useCallback((L: LeafletNS, map: Leaflet.Map, storm: Storm) => {
+    trackGroupRef.current?.remove()
+    fixMarkerRef.current = null
 
-      if (!mapRef.current || mapInstanceRef.current) return
+    const group = L.layerGroup().addTo(map)
+    trackGroupRef.current = group
 
-      // Fix Leaflet default marker icon path issue with bundlers
-      delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    const latlngs = storm.track.map(([lat, lon]) => [lat, lon] as [number, number])
+
+    // Dashed guide through every fix, under the intensity-coded segments.
+    L.polyline(latlngs, {
+      color: 'rgba(180, 214, 234, 0.26)',
+      weight: 1,
+      dashArray: '3 6',
+      interactive: false,
+    }).addTo(group)
+
+    for (let i = 0; i < storm.track.length - 1; i++) {
+      const [lat1, lon1, kt1] = storm.track[i]
+      const [lat2, lon2, kt2] = storm.track[i + 1]
+      const avg = (kt1 + kt2) / 2
+      L.polyline(
+        [
+          [lat1, lon1],
+          [lat2, lon2],
+        ] as [number, number][],
+        {
+          color: ktColor(avg),
+          weight: 1.5 + (avg / 120) * 4,
+          opacity: 0.9,
+          lineCap: 'round',
+          interactive: false,
+        },
+      ).addTo(group)
+    }
+
+    storm.track.forEach(([lat, lon, kt], i) => {
+      const marker = L.circleMarker([lat, lon], {
+        radius: 3.5 + (kt / 120) * 4,
+        fillColor: ktColor(kt),
+        fillOpacity: 0.92,
+        color: 'rgba(255, 255, 255, 0.34)',
+        weight: i === storm.track.length - 1 ? 1.4 : 0.6,
       })
+      marker.bindTooltip(
+        `<b>${storm.name}</b><br/>${fixLabel(storm, i)}<br/>${kt} kt · ${lat.toFixed(1)}°N ${lon.toFixed(1)}°E`,
+        { className: 'storm-tip', direction: 'top', offset: [0, -6] },
+      )
+      marker.on('mouseover', () => setFix(i))
+      marker.addTo(group)
+    })
 
-      map = L.map(mapRef.current, {
+    if (storm.landfall) {
+      const [lfLat, lfLon] = storm.landfall
+      const icon = L.divIcon({
+        html: '<span class="landfall__ring"></span><span class="landfall__dot"></span>',
+        className: 'landfall',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+      })
+      L.marker([lfLat, lfLon], { icon })
+        .bindTooltip(`<b>Landfall</b><br/>${storm.name}`, {
+          className: 'storm-tip',
+          direction: 'top',
+          offset: [0, -12],
+        })
+        .addTo(group)
+    }
+
+    map.fitBounds(L.latLngBounds(latlngs), { padding: [70, 70], maxZoom: 6 })
+  }, [])
+
+  /* ── Map lifecycle ───────────────────────────────────────────────────── */
+  useEffect(() => {
+    let cancelled = false
+
+    const init = async () => {
+      const mod = await import('leaflet')
+      await import('leaflet/dist/leaflet.css')
+      const L = (mod.default ?? mod) as LeafletNS
+      if (cancelled || !mapHostRef.current || mapRef.current) return
+
+      leafletRef.current = L
+
+      const map = L.map(mapHostRef.current, {
         center: [15, 82],
         zoom: 5,
         zoomControl: false,
         attributionControl: true,
         scrollWheelZoom: true,
+        worldCopyJump: false,
       })
+      mapRef.current = map
 
-      mapInstanceRef.current = map
-
-      // OpenStreetMap — free, no API key needed
-      // Using dark-styled tiles from Stadia Maps (free tier, no key for localhost)
-      L.tileLayer(
-        'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-        {
-          attribution: '© Stadia Maps © OpenMapTiles © OpenStreetMap',
-          maxZoom: 20,
-        }
-      ).addTo(map)
+      L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+        attribution: '© Stadia Maps © OpenMapTiles © OpenStreetMap',
+        maxZoom: 18,
+      }).addTo(map)
 
       L.control.zoom({ position: 'bottomright' }).addTo(map)
+      L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map)
 
-      // Draw initial storm
-      drawStorm(L, map, selected)
+      drawStorm(L, map, STORMS[0])
     }
 
-    initMap()
+    init()
 
     return () => {
-      if (mapInstanceRef.current) {
-        ;(mapInstanceRef.current as { remove: () => void }).remove()
-        mapInstanceRef.current = null
-      }
+      cancelled = true
+      mapRef.current?.remove()
+      mapRef.current = null
+      trackGroupRef.current = null
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [drawStorm])
 
-  // Redraw when selected storm changes
+  // Redraw on selection change.
   useEffect(() => {
-    const updateMap = async () => {
-      if (!mapInstanceRef.current) return
-      const leaflet = await import('leaflet')
-      const L = leaflet.default ?? leaflet
-      const map = mapInstanceRef.current as ReturnType<typeof import('leaflet').map>
-      drawStorm(L, map, selected)
-    }
-    updateMap()
-  }, [selected])
+    const L = leafletRef.current
+    const map = mapRef.current
+    if (!L || !map) return
+    setFix(null)
+    drawStorm(L, map, selected)
+  }, [selected, drawStorm])
 
-  const drawStorm = (
-    L: typeof import('leaflet'),
-    map: ReturnType<typeof import('leaflet').map>,
-    storm: Storm
-  ) => {
-    // Clear previous layers
-    if (trackLayerRef.current) {
-      (trackLayerRef.current as { remove: () => void }).remove()
-    }
-    markersRef.current.forEach((m) => (m as { remove: () => void }).remove())
-    markersRef.current = []
+  // Highlight the scrubbed fix.
+  useEffect(() => {
+    const L = leafletRef.current
+    const map = mapRef.current
+    const group = trackGroupRef.current
+    if (!L || !map || !group) return
 
-    const group = L.layerGroup().addTo(map)
-    trackLayerRef.current = group
+    fixMarkerRef.current?.remove()
+    fixMarkerRef.current = null
+    if (fix == null) return
 
-    // ── Track line — dashed polyline with intensity encoding ──
-    const latlngs = storm.track.map(([lat, lon]) => [lat, lon] as [number, number])
-
-    // Main track — slightly transparent
-    L.polyline(latlngs, {
-      color: 'rgba(138, 180, 200, 0.25)',
-      weight: 1.5,
-      dashArray: '4 6',
-    }).addTo(group)
-
-    // Intensity segments — thicker for stronger winds
-    for (let i = 0; i < storm.track.length - 1; i++) {
-      const [lat1, lon1, kt1] = storm.track[i]
-      const [lat2, lon2, kt2] = storm.track[i + 1]
-      const avgKt = (kt1 + kt2) / 2
-      const t = Math.max(0, Math.min(1, (avgKt - 35) / 90))
-      const r = Math.round(138 + t * 82)
-      const g = Math.round(180 - t * 60)
-      const b = Math.round(200 - t * 30)
-      const alpha = 0.5 + t * 0.4
-
-      L.polyline([[lat1, lon1], [lat2, lon2]] as [number, number][], {
-        color: `rgba(${r},${g},${b},${alpha})`,
-        weight: 1.5 + t * 3.5,
-      }).addTo(group)
-    }
-
-    // ── Track position markers ──
-    storm.track.forEach(([lat, lon, kt], i) => {
-      const t = Math.max(0, Math.min(1, (kt - 35) / 90))
-      const r = Math.round(4 + t * 5)
-      const isLast = i === storm.track.length - 1
-
-      const circle = L.circleMarker([lat, lon], {
-        radius: isLast ? r + 1 : r,
-        fillColor: `rgba(${Math.round(138 + t * 82)}, ${Math.round(180 - t * 60)}, ${Math.round(200 - t * 30)}, 1)`,
-        fillOpacity: isLast ? 0.95 : 0.6 + t * 0.3,
-        color: 'rgba(255,255,255,0.3)',
-        weight: isLast ? 1.5 : 0.5,
-      })
-
-      const date = i < 3 ? `Oct ${4 + i * 2}` : `Oct ${10 + (i - 3)}`
-      circle.bindTooltip(
-        `<div class="storm-tooltip"><b>${storm.name}</b><br/>${date} · ${kt} kt</div>`,
-        { className: 'storm-tooltip-container', direction: 'top', offset: [0, -6] }
-      )
-      circle.addTo(group)
-      markersRef.current.push(circle)
+    const [lat, lon] = selected.track[fix]
+    const halo = L.circleMarker([lat, lon], {
+      radius: 13,
+      fill: false,
+      color: '#5ecfe0',
+      weight: 1.2,
+      opacity: 0.85,
+      interactive: false,
     })
+    halo.addTo(group)
+    fixMarkerRef.current = halo
+  }, [fix, selected])
 
-    // ── Landfall marker ──
-    if (storm.landfall) {
-      const [lfLat, lfLon] = storm.landfall
-      const landfallIcon = L.divIcon({
-        html: `<div class="landfall-marker"><div class="landfall-marker__ring"></div><div class="landfall-marker__dot"></div></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        className: '',
-      })
-      const lm = L.marker([lfLat, lfLon], { icon: landfallIcon })
-      lm.bindTooltip(`<div class="storm-tooltip"><b>Landfall</b><br/>${storm.name}</div>`, {
-        className: 'storm-tooltip-container',
-        direction: 'top',
-        offset: [0, -12],
-      })
-      lm.addTo(group)
-      markersRef.current.push(lm)
-    }
-
-    // ── Fit map to track ──
-    map.fitBounds(L.latLngBounds(latlngs), { padding: [60, 60], maxZoom: 6 })
-  }
-
-  // Intensity label mapping
-  const intensityLabel = (cat: string) => {
-    const map: Record<string, string> = {
-      'ESCS': 'Extremely Severe',
-      'VSCS': 'Very Severe',
-      'SCS':  'Severe',
-      'CS':   'Cyclonic Storm',
-      'TD':   'Depression',
-    }
-    return map[cat] ?? cat
-  }
+  const activeFix = fix == null ? null : selected.track[fix]
+  const peak = useMemo(() => peakKt(selected), [selected])
 
   return (
-    <div className="monitor">
-      <Navbar />
+    <div className="monitor route-fade">
+      <Nav />
 
-      <div className="monitor__layout">
+      <div className="monitor__grid">
         {/* ── Map ── */}
-        <div className="monitor__map-wrap" id="monitor-map">
-          <div ref={mapRef} className="monitor__map-el" />
+        <div className="monitor__map" id="monitor-map">
+          <div ref={mapHostRef} className="monitor__map-el" />
+
+          <div className="monitor__map-head">
+            <span className="label">North Indian Ocean · best track</span>
+            <span className="monitor__map-coords readout">
+              {activeFix
+                ? `${activeFix[0].toFixed(1)}°N  ${activeFix[1].toFixed(1)}°E  ·  ${activeFix[2]} kt`
+                : `${selected.track.length} fixes · peak ${peak} kt`}
+            </span>
+          </div>
+
+          <div className="monitor__legend">
+            {[34, 48, 64, 83, 96, 113].map((kt, i, arr) => (
+              <span className="monitor__legend-item" key={kt}>
+                <span className="monitor__legend-swatch" style={{ background: ktColor(kt + 1) }} />
+                {i === arr.length - 1 ? `${kt}+` : kt}
+              </span>
+            ))}
+            <span className="monitor__legend-unit">kt</span>
+          </div>
         </div>
 
-        {/* ── Intelligence panel ── */}
+        {/* ── Dossier ── */}
         <motion.aside
-          className="monitor__panel"
+          className="dock"
           initial="hidden"
           animate="visible"
+          variants={stagger}
         >
-          {/* Panel header */}
-          <motion.div className="panel__header" variants={reveal} custom={0.1}>
-            <h2 className="panel__title">Storm archive</h2>
-            <span className="panel__tag">Historical</span>
-          </motion.div>
-
-          {/* Storm details */}
-          <motion.div className="panel__storm" variants={reveal} custom={0.2} key={selected.id}>
-            <div className="panel__storm-name">{selected.name}</div>
-            <div className="panel__storm-meta">
-              {selected.basin} · {selected.year}
+          <motion.header className="dock__head" variants={reveal} custom={0.05}>
+            <div>
+              <span className="label">Storm archive</span>
+              <h1 className="dock__title heading">Monitor</h1>
             </div>
+            <span className="pill pill--live">
+              <span className="pill__dot" />
+              Historical
+            </span>
+          </motion.header>
 
-            <div className="panel__divider" />
-
-            <div className="panel__stats">
-              <div className="stat">
-                <span className="stat__value">{selected.vmax}</span>
-                <span className="stat__label">peak wind</span>
-              </div>
-              <div className="stat">
-                <span className="stat__value">{selected.mslp}</span>
-                <span className="stat__label">min pressure</span>
-              </div>
+          {/* Selected system */}
+          <motion.section
+            className="dock__storm"
+            variants={reveal}
+            custom={0.14}
+            key={selected.id}
+          >
+            <div className="dock__storm-id">
+              <h2 className="dock__name display">{selected.name}</h2>
+              <span className="dock__code label">{selected.id}</span>
             </div>
+            <p className="dock__meta label">
+              {selected.basin} · {selected.dates[0]} — {selected.dates[1]}
+            </p>
 
-            <div className="panel__row">
-              <span className="panel__row-label">Category</span>
-              <span className="panel__row-value">{intensityLabel(selected.cat)}</span>
-            </div>
-            <div className="panel__row">
-              <span className="panel__row-label">Status</span>
-              <span className="panel__row-value">{selected.status}</span>
-            </div>
-
-            <div className="panel__divider" />
-
-            {/* Model prediction */}
-            <div className="panel__prediction">
-              <div className="panel__pred-header">
-                <span className="panel__pred-label">VayuDrishti CNN v1</span>
-                <span className="panel__pred-value">{selected.prob.toFixed(3)}</span>
-              </div>
-              <div className="panel__pred-bar">
-                <div
-                  className="panel__pred-fill"
-                  style={{ width: `${selected.prob * 100}%` }}
+            {/* 3D structure inset, scaled to this storm's real intensity */}
+            <div className="dock__structure">
+              <Suspense fallback={<div className="dock__structure-poster" />}>
+                <StormCanvas
+                  cameraKeys={INSPECT_KEYS}
+                  intensity={strength(selected)}
+                  densityScale={0.46}
+                  showOcean={false}
+                  orbit={0.05}
                 />
-                <div className="panel__pred-threshold" />
+              </Suspense>
+              <span className="dock__structure-cap label">
+                Structure at peak · {intensityLabel(selected.cat)}
+              </span>
+            </div>
+
+            <div className="dock__vitals">
+              <div className="dock__vital">
+                <span className="dock__vital-value readout">{selected.vmax}</span>
+                <span className="label">peak wind</span>
               </div>
-              <div className="panel__pred-foot">
-                <span>P(cyclone) · threshold 0.57</span>
-                <span className="panel__pred-class">CYCLONE</span>
+              <div className="dock__vital">
+                <span className="dock__vital-value readout">{selected.mslp}</span>
+                <span className="label">min pressure</span>
               </div>
             </div>
-          </motion.div>
 
-          {/* Storm selector */}
-          <motion.div className="panel__list" variants={reveal} custom={0.3}>
-            <div className="panel__list-title">Historical systems</div>
-            {STORMS.map((s) => (
-              <button
-                key={s.id}
-                className={`panel__storm-btn ${selected.id === s.id ? 'panel__storm-btn--active' : ''}`}
-                onClick={() => setSelected(s)}
-              >
-                <span className="panel__storm-btn-name">{s.name}</span>
-                <span className="panel__storm-btn-meta">{s.year} · {s.cat}</span>
-              </button>
-            ))}
-          </motion.div>
+            <div className="kv">
+              <span className="kv__k">Category</span>
+              <span className="kv__v">{intensityLabel(selected.cat)}</span>
+            </div>
+            <div className="kv">
+              <span className="kv__k">Outcome</span>
+              <span className="kv__v">{selected.status}</span>
+            </div>
+
+            <p className="dock__summary">{selected.summary}</p>
+
+            {/* Track scrubber */}
+            <div className="scrub">
+              <div className="scrub__head">
+                <span className="label">Best-track fixes</span>
+                <span className="scrub__stamp readout">
+                  {fix == null ? '—' : fixLabel(selected, fix)}
+                </span>
+              </div>
+              <div className="scrub__bars" onMouseLeave={() => setFix(null)}>
+                {selected.track.map(([, , kt], i) => (
+                  <button
+                    key={i}
+                    className={`scrub__bar ${fix === i ? 'scrub__bar--on' : ''}`}
+                    style={{
+                      height: `${18 + (kt / 120) * 42}px`,
+                      background: ktColor(kt),
+                    }}
+                    onMouseEnter={() => setFix(i)}
+                    onFocus={() => setFix(i)}
+                    onClick={() => setFix(i)}
+                    aria-label={`Fix ${i}: ${kt} knots`}
+                  />
+                ))}
+              </div>
+              <div className="scrub__axis">
+                <span className="label">{selected.dates[0]}</span>
+                <span className="label">{selected.dates[1]}</span>
+              </div>
+            </div>
+
+            {/* Model verdict */}
+            <div className="verdict">
+              <div className="verdict__head">
+                <span className="label">VayuDrishti CNN v1</span>
+                <span className="verdict__value readout">{selected.prob.toFixed(3)}</span>
+              </div>
+              <div className="verdict__track">
+                <motion.span
+                  className="verdict__fill"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: selected.prob }}
+                  transition={{ duration: 1, ease: EASE }}
+                />
+                <span className="verdict__threshold" style={{ left: `${THRESHOLD * 100}%` }} />
+              </div>
+              <div className="verdict__foot">
+                <span className="label">P(cyclone) · threshold {THRESHOLD}</span>
+                <span className="verdict__class">
+                  {selected.prob >= THRESHOLD ? 'Cyclone' : 'Non-cyclone'}
+                </span>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Index */}
+          <motion.section className="index" variants={reveal} custom={0.24}>
+            <span className="label index__title">Historical systems</span>
+            {STORMS.map((s) => {
+              const on = s.id === selected.id
+              return (
+                <button
+                  key={s.id}
+                  className={`index__row ${on ? 'index__row--on' : ''}`}
+                  onClick={() => setSelected(s)}
+                >
+                  <span className="index__year readout">{s.year}</span>
+                  <span className="index__name">{s.name}</span>
+                  <span className="index__basin label">
+                    {s.basin === 'Bay of Bengal' ? 'BoB' : 'ARB'}
+                  </span>
+                  <span className="index__kt readout" style={{ color: ktColor(peakKt(s)) }}>
+                    {peakKt(s)} kt
+                  </span>
+                </button>
+              )
+            })}
+          </motion.section>
         </motion.aside>
       </div>
     </div>

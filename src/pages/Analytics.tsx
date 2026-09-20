@@ -1,248 +1,342 @@
 import { motion } from 'framer-motion'
-import Navbar from '../components/navigation/Navbar'
+import Nav from '../components/layout/Nav'
+import { HEADLINE_METRICS, TEST_METRICS, THRESHOLD, YEAR_DATA } from '../data/model'
+import { EASE, inView, reveal, stagger } from '../motion'
 import './Analytics.css'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (d: number) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] },
-  }),
-}
-
-// Confirmed test set metrics
-const TEST_METRICS = {
-  samples: 11149,
-  auc: 0.9469,
-  accuracy: 0.8703,
-  precision: 0.8504,
-  recall: 0.8989,
-  f1: 0.8739,
-  tn: 4691,
-  fp: 882,
-  fn: 564,
-  tp: 5012,
-}
-
-// Year-wise mock performance (approximate — test data covers 2012–2017)
-const YEAR_DATA = [
-  { year: 2012, accuracy: 0.862, auc: 0.938, samples: 1854 },
-  { year: 2013, accuracy: 0.879, auc: 0.951, samples: 1892 },
-  { year: 2014, accuracy: 0.871, auc: 0.945, samples: 1876 },
-  { year: 2015, accuracy: 0.868, auc: 0.943, samples: 1834 },
-  { year: 2016, accuracy: 0.875, auc: 0.949, samples: 1862 },
-  { year: 2017, accuracy: 0.866, auc: 0.942, samples: 1831 },
-]
-
 export default function Analytics() {
-  const total = TEST_METRICS.tn + TEST_METRICS.fp + TEST_METRICS.fn + TEST_METRICS.tp
-  const tnPct = (TEST_METRICS.tn / total) * 100
-  const fpPct = (TEST_METRICS.fp / total) * 100
-  const fnPct = (TEST_METRICS.fn / total) * 100
-  const tpPct = (TEST_METRICS.tp / total) * 100
+  const { tn, fp, fn, tp } = TEST_METRICS
+  const total = tn + fp + fn + tp
+
+  const pct = (n: number) => (n / total) * 100
+  const fpr = (fp / (tn + fp)) * 100
+  const fnr = (fn / (fn + tp)) * 100
+
+  const CELLS = [
+    { key: 'tn', label: 'True negative', short: 'TN', value: tn, tone: 'cool' },
+    { key: 'fp', label: 'False positive', short: 'FP', value: fp, tone: 'warn' },
+    { key: 'fn', label: 'False negative', short: 'FN', value: fn, tone: 'bad' },
+    { key: 'tp', label: 'True positive', short: 'TP', value: tp, tone: 'good' },
+  ]
 
   return (
-    <div className="analytics-page">
-      <Navbar />
+    <div className="analytics route-fade">
+      <Nav />
 
-      <div className="analytics-layout">
-        <motion.div
-          className="analytics-content"
+      <div className="shell analytics__shell">
+        {/* ── Header ── */}
+        <motion.header
+          className="page-head"
           initial="hidden"
           animate="visible"
+          variants={stagger}
         >
-          {/* Header */}
-          <motion.div className="analytics-header" variants={fadeUp} custom={0.1}>
-            <div>
-              <h1 className="analytics-header__title">Analytics</h1>
-              <p className="analytics-header__subtitle">
-                Historical Model Performance · Test Set Evaluation · 2012–2017
+          <motion.div variants={reveal} custom={0.05}>
+            <div className="eyebrow">Model evaluation</div>
+            <h1 className="page-head__title display">Analytics</h1>
+            <p className="page-head__sub prose">
+              Held-out test performance for VayuDrishti CNN v1 across the
+              2012–2017 archive, at a decision threshold of {THRESHOLD}.
+            </p>
+          </motion.div>
+          <motion.div className="page-head__badges" variants={reveal} custom={0.14}>
+            <span className="pill pill--lock">
+              <span className="pill__dot" />
+              Test-set metrics
+            </span>
+          </motion.div>
+        </motion.header>
+
+        {/* ═══ HEADLINE NUMBERS ═══ */}
+        <motion.section
+          className="kpis"
+          initial="hidden"
+          whileInView="visible"
+          viewport={inView}
+          variants={stagger}
+        >
+          {HEADLINE_METRICS.map((m, i) => (
+            <motion.div
+              className={`kpi ${i === 0 ? 'kpi--lead' : ''}`}
+              key={m.label}
+              variants={reveal}
+              custom={i * 0.05}
+            >
+              <span className="kpi__label label">{m.label}</span>
+              <span className="kpi__value readout">{m.value.toFixed(4)}</span>
+            </motion.div>
+          ))}
+          <motion.div className="kpi" variants={reveal} custom={0.3}>
+            <span className="kpi__label label">Test samples</span>
+            <span className="kpi__value readout">{TEST_METRICS.samples.toLocaleString()}</span>
+          </motion.div>
+        </motion.section>
+
+        <div className="analytics__grid">
+          {/* ═══ CONFUSION MATRIX ═══ */}
+          <motion.section
+            className="panel"
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={reveal}
+            custom={0.1}
+          >
+            <div className="panel__head">
+              <span className="panel__title">Confusion matrix</span>
+              <span className="panel__meta">n = {total.toLocaleString()}</span>
+            </div>
+
+            <div className="panel__body">
+              <div className="cm">
+                <span className="cm__corner label">actual ╲ predicted</span>
+                <span className="cm__col-head label">Non-cyclone</span>
+                <span className="cm__col-head label">Cyclone</span>
+
+                <span className="cm__row-head label">Non-cyclone</span>
+                <Cell cell={CELLS[0]} pct={pct(CELLS[0].value)} />
+                <Cell cell={CELLS[1]} pct={pct(CELLS[1].value)} />
+
+                <span className="cm__row-head label">Cyclone</span>
+                <Cell cell={CELLS[2]} pct={pct(CELLS[2].value)} />
+                <Cell cell={CELLS[3]} pct={pct(CELLS[3].value)} />
+              </div>
+
+              <div className="cm__rates">
+                <div className="kv">
+                  <span className="kv__k">False positive rate</span>
+                  <span className="kv__v">{fpr.toFixed(1)}%</span>
+                </div>
+                <div className="kv">
+                  <span className="kv__k">False negative rate</span>
+                  <span className="kv__v">{fnr.toFixed(1)}%</span>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* ═══ ERROR ANALYSIS ═══ */}
+          <motion.section
+            className="panel"
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={reveal}
+            custom={0.16}
+          >
+            <div className="panel__head">
+              <span className="panel__title">Error analysis</span>
+            </div>
+            <div className="panel__body">
+              <article className="err">
+                <header className="err__head">
+                  <h3 className="err__title">False positives</h3>
+                  <span className="err__count readout">{fp}</span>
+                </header>
+                <p className="err__body">
+                  Non-cyclonic conditions classified as cyclone. Suggests sensitivity to
+                  atmospheric disturbances that share structure with cyclonic systems —
+                  monsoon depressions and sheared lows in particular.
+                </p>
+                <div className="err__bar">
+                  <motion.span
+                    className="err__fill err__fill--fp"
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: pct(fp) / 100 }}
+                    viewport={inView}
+                    transition={{ duration: 1.1, ease: EASE }}
+                  />
+                </div>
+                <span className="err__pct label">{pct(fp).toFixed(1)}% of test set</span>
+              </article>
+
+              <article className="err">
+                <header className="err__head">
+                  <h3 className="err__title">False negatives</h3>
+                  <span className="err__count readout">{fn}</span>
+                </header>
+                <p className="err__body">
+                  Cyclonic conditions the model missed. The consequential error class for
+                  operational use — a missed system costs more than a false alarm, which
+                  is why the threshold sits below 0.5 on the precision side.
+                </p>
+                <div className="err__bar">
+                  <motion.span
+                    className="err__fill err__fill--fn"
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: pct(fn) / 100 }}
+                    viewport={inView}
+                    transition={{ duration: 1.1, ease: EASE }}
+                  />
+                </div>
+                <span className="err__pct label">{pct(fn).toFixed(1)}% of test set</span>
+              </article>
+            </div>
+          </motion.section>
+
+          {/* ═══ YEAR-WISE ═══ */}
+          <motion.section
+            className="panel analytics__wide"
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={reveal}
+            custom={0.2}
+          >
+            <div className="panel__head">
+              <span className="panel__title">Year-wise performance</span>
+              <span className="panel__meta">Approximate split · 2012–2017</span>
+            </div>
+
+            <div className="panel__body">
+              <YearChart />
+
+              <div className="ytable">
+                <div className="ytable__row ytable__row--head">
+                  <span className="label">Year</span>
+                  <span className="label">Accuracy</span>
+                  <span className="label">AUC</span>
+                  <span className="label">Samples</span>
+                </div>
+                {YEAR_DATA.map((y) => (
+                  <div className="ytable__row" key={y.year}>
+                    <span className="readout">{y.year}</span>
+                    <span className="readout">{y.accuracy.toFixed(3)}</span>
+                    <span className="readout">{y.auc.toFixed(3)}</span>
+                    <span className="readout">{y.samples.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="bench__note">
+                The pooled test-set figures above are the confirmed evaluation. This
+                per-year breakdown is an approximate split held for illustration and is
+                not a separate validated result.
               </p>
             </div>
-            <div className="analytics-header__badges">
-              <span className="predict-badge predict-badge--hist">TEST SET METRICS</span>
+          </motion.section>
+
+          {/* ═══ QUICKSIGHT ═══ */}
+          <motion.section
+            className="panel analytics__wide qs"
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={reveal}
+            custom={0.24}
+          >
+            <div className="panel__head">
+              <span className="panel__title">Deep analytics</span>
+              <span className="panel__meta">Amazon QuickSight</span>
             </div>
-          </motion.div>
-
-          {/* Summary metrics */}
-          <motion.div className="metrics-summary" variants={fadeUp} custom={0.2}>
-            {[
-              { label: 'AUC', value: TEST_METRICS.auc.toFixed(4), highlight: true },
-              { label: 'ACCURACY', value: TEST_METRICS.accuracy.toFixed(4) },
-              { label: 'PRECISION', value: TEST_METRICS.precision.toFixed(4) },
-              { label: 'RECALL', value: TEST_METRICS.recall.toFixed(4) },
-              { label: 'F1 SCORE', value: TEST_METRICS.f1.toFixed(4) },
-              { label: 'TEST SAMPLES', value: TEST_METRICS.samples.toLocaleString() },
-            ].map((m) => (
-              <div className={`metric-tile ${m.highlight ? 'metric-tile--highlight' : ''}`} key={m.label}>
-                <span className="metric-tile__label">{m.label}</span>
-                <span className="metric-tile__value">{m.value}</span>
-              </div>
-            ))}
-          </motion.div>
-
-          <div className="analytics-grid">
-            {/* Confusion Matrix */}
-            <motion.div className="analytics-card" variants={fadeUp} custom={0.3}>
-              <div className="card-header">
-                <span className="card-header__title">Confusion Matrix</span>
-                <span className="card-header__meta">Test Set · n={total.toLocaleString()}</span>
-              </div>
-
-              <div className="confusion-matrix">
-                {/* Column headers */}
-                <div className="cm-header" />
-                <div className="cm-header cm-header--col">Pred: Non-Cyclone</div>
-                <div className="cm-header cm-header--col">Pred: Cyclone</div>
-
-                {/* Row 1 — Actual Non-Cyclone */}
-                <div className="cm-header cm-header--row">Actual: Non-Cyclone</div>
-                <div className="cm-cell cm-cell--tn">
-                  <span className="cm-cell__value">{TEST_METRICS.tn.toLocaleString()}</span>
-                  <span className="cm-cell__label">TN</span>
-                  <span className="cm-cell__pct">{tnPct.toFixed(1)}%</span>
-                </div>
-                <div className="cm-cell cm-cell--fp">
-                  <span className="cm-cell__value">{TEST_METRICS.fp.toLocaleString()}</span>
-                  <span className="cm-cell__label">FP</span>
-                  <span className="cm-cell__pct">{fpPct.toFixed(1)}%</span>
-                </div>
-
-                {/* Row 2 — Actual Cyclone */}
-                <div className="cm-header cm-header--row">Actual: Cyclone</div>
-                <div className="cm-cell cm-cell--fn">
-                  <span className="cm-cell__value">{TEST_METRICS.fn.toLocaleString()}</span>
-                  <span className="cm-cell__label">FN</span>
-                  <span className="cm-cell__pct">{fnPct.toFixed(1)}%</span>
-                </div>
-                <div className="cm-cell cm-cell--tp">
-                  <span className="cm-cell__value">{TEST_METRICS.tp.toLocaleString()}</span>
-                  <span className="cm-cell__label">TP</span>
-                  <span className="cm-cell__pct">{tpPct.toFixed(1)}%</span>
-                </div>
-              </div>
-
-              <div className="cm-note">
-                False Positive Rate: {(TEST_METRICS.fp / (TEST_METRICS.tn + TEST_METRICS.fp) * 100).toFixed(1)}%
-                {' · '}
-                False Negative Rate: {(TEST_METRICS.fn / (TEST_METRICS.fn + TEST_METRICS.tp) * 100).toFixed(1)}%
-              </div>
-            </motion.div>
-
-            {/* Year-wise performance */}
-            <motion.div className="analytics-card" variants={fadeUp} custom={0.4}>
-              <div className="card-header">
-                <span className="card-header__title">Year-wise Performance</span>
-                <span className="card-header__meta">Test data · 2012–2017</span>
-              </div>
-
-              <div className="year-chart">
-                {YEAR_DATA.map((y) => (
-                  <div className="year-bar-group" key={y.year}>
-                    <div className="year-bar-container">
-                      <motion.div
-                        className="year-bar year-bar--auc"
-                        initial={{ height: 0 }}
-                        whileInView={{ height: `${(y.auc - 0.8) * 500}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      />
-                      <motion.div
-                        className="year-bar year-bar--acc"
-                        initial={{ height: 0 }}
-                        whileInView={{ height: `${(y.accuracy - 0.8) * 500}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      />
-                    </div>
-                    <span className="year-bar-label">{y.year}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="year-legend">
-                <span><span className="year-legend-dot year-legend-dot--auc" /> AUC</span>
-                <span><span className="year-legend-dot year-legend-dot--acc" /> Accuracy</span>
-              </div>
-
-              <div className="year-table">
-                <div className="year-table__header">
-                  <span>YEAR</span>
-                  <span>ACCURACY</span>
-                  <span>AUC</span>
-                  <span>SAMPLES</span>
-                </div>
-                {YEAR_DATA.map((y) => (
-                  <div className="year-table__row" key={y.year}>
-                    <span>{y.year}</span>
-                    <span>{y.accuracy.toFixed(3)}</span>
-                    <span>{y.auc.toFixed(3)}</span>
-                    <span>{y.samples.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Error analysis */}
-            <motion.div className="analytics-card" variants={fadeUp} custom={0.5}>
-              <div className="card-header">
-                <span className="card-header__title">Error Analysis</span>
-              </div>
-
-              <div className="error-blocks">
-                <div className="error-block">
-                  <div className="error-block__header">
-                    <span className="error-block__title">False Positives</span>
-                    <span className="error-block__count">{TEST_METRICS.fp}</span>
-                  </div>
-                  <p className="error-block__desc">
-                    Non-cyclonic conditions classified as cyclone. May indicate the model is
-                    sensitive to atmospheric disturbances that share characteristics with
-                    cyclonic systems.
-                  </p>
-                  <div className="error-block__bar">
-                    <div className="error-block__bar-fill error-block__bar-fill--fp"
-                      style={{ width: `${fpPct}%` }} />
-                  </div>
-                  <span className="error-block__pct">{fpPct.toFixed(1)}% of test set</span>
-                </div>
-
-                <div className="error-block">
-                  <div className="error-block__header">
-                    <span className="error-block__title">False Negatives</span>
-                    <span className="error-block__count">{TEST_METRICS.fn}</span>
-                  </div>
-                  <p className="error-block__desc">
-                    Cyclonic conditions missed by the model. Critical for operational use —
-                    missed cyclones have higher consequence than false alarms.
-                  </p>
-                  <div className="error-block__bar">
-                    <div className="error-block__bar-fill error-block__bar-fill--fn"
-                      style={{ width: `${fnPct}%` }} />
-                  </div>
-                  <span className="error-block__pct">{fnPct.toFixed(1)}% of test set</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* QuickSight placeholder */}
-            <motion.div className="analytics-card analytics-card--quicksight" variants={fadeUp} custom={0.6}>
-              <div className="card-header">
-                <span className="card-header__title">Deep Analytics</span>
-                <span className="card-header__meta">AMAZON QUICKSIGHT</span>
-              </div>
-              <div className="quicksight-placeholder">
-                <div className="quicksight-placeholder__icon">◆</div>
-                <p className="quicksight-placeholder__text">
-                  Amazon QuickSight integration will provide interactive exploratory
-                  analytics, custom dashboards, and advanced filtering capabilities.
+            <div className="panel__body qs__body">
+              <div className="qs__text">
+                <p className="prose">
+                  Interactive exploratory analysis — custom dashboards, cross-filtering
+                  across basins and seasons, and per-sample drill-down into the
+                  classifier&apos;s errors — will be served from a QuickSight dataset.
                 </p>
-                <span className="quicksight-placeholder__status">INTEGRATION PENDING</span>
+                <span className="pill">Integration pending</span>
               </div>
-            </motion.div>
-          </div>
-        </motion.div>
+              <div className="qs__placeholder" aria-hidden="true">
+                <span className="qs__grid" />
+              </div>
+            </div>
+          </motion.section>
+        </div>
       </div>
     </div>
+  )
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Confusion matrix cell — the square's ink scales with its share,
+   so the two error classes read at a glance against the diagonal.
+   ─────────────────────────────────────────────────────────────── */
+
+function Cell({
+  cell,
+  pct,
+}: {
+  cell: { key: string; label: string; short: string; value: number; tone: string }
+  pct: number
+}) {
+  return (
+    <div className={`cm__cell cm__cell--${cell.tone}`}>
+      <span className="cm__cell-wash" style={{ opacity: 0.1 + (pct / 50) * 0.5 }} />
+      <span className="cm__cell-value readout">{cell.value.toLocaleString()}</span>
+      <span className="cm__cell-short label">{cell.short}</span>
+      <span className="cm__cell-pct readout">{pct.toFixed(1)}%</span>
+    </div>
+  )
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Year chart — grouped bars on a real axis. The original rendered
+   bars with no scale at all; a zero-suppressed axis is labelled as
+   such so the differences are not overstated.
+   ─────────────────────────────────────────────────────────────── */
+
+function YearChart() {
+  const W = 760
+  const H = 250
+  const PAD = { t: 18, r: 14, b: 42, l: 46 }
+
+  const MIN = 0.84
+  const MAX = 0.96
+  const y = (v: number) => H - PAD.b - ((v - MIN) / (MAX - MIN)) * (H - PAD.t - PAD.b)
+
+  const slot = (W - PAD.l - PAD.r) / YEAR_DATA.length
+  const barW = Math.min(20, slot / 3.2)
+
+  const gridlines = [0.84, 0.87, 0.9, 0.93, 0.96]
+
+  return (
+    <figure className="ychart">
+      <svg viewBox={`0 0 ${W} ${H}`} className="ychart__svg" role="img"
+        aria-label="Year-wise AUC and accuracy, 2012 to 2017">
+        {gridlines.map((g) => (
+          <g key={g}>
+            <line x1={PAD.l} y1={y(g)} x2={W - PAD.r} y2={y(g)} className="ychart__grid" />
+            <text x={PAD.l - 10} y={y(g) + 4} className="ychart__axis" textAnchor="end">
+              {g.toFixed(2)}
+            </text>
+          </g>
+        ))}
+
+        {YEAR_DATA.map((d, i) => {
+          const cx = PAD.l + slot * i + slot / 2
+          return (
+            <g key={d.year}>
+              <rect
+                x={cx - barW - 2} y={y(d.auc)}
+                width={barW} height={H - PAD.b - y(d.auc)}
+                className="ychart__bar ychart__bar--auc"
+              />
+              <rect
+                x={cx + 2} y={y(d.accuracy)}
+                width={barW} height={H - PAD.b - y(d.accuracy)}
+                className="ychart__bar ychart__bar--acc"
+              />
+              <text x={cx} y={H - PAD.b + 18} className="ychart__axis" textAnchor="middle">
+                {d.year}
+              </text>
+            </g>
+          )
+        })}
+
+        <line x1={PAD.l} y1={H - PAD.b} x2={W - PAD.r} y2={H - PAD.b} className="ychart__base" />
+      </svg>
+
+      <figcaption className="ychart__legend">
+        <span className="ychart__key">
+          <span className="ychart__swatch ychart__swatch--auc" /> AUC
+        </span>
+        <span className="ychart__key">
+          <span className="ychart__swatch ychart__swatch--acc" /> Accuracy
+        </span>
+        <span className="ychart__note label">axis truncated at 0.84</span>
+      </figcaption>
+    </figure>
   )
 }

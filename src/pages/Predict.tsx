@@ -1,25 +1,17 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import Navbar from '../components/navigation/Navbar'
+import Nav from '../components/layout/Nav'
+import FieldTile from '../components/data/FieldTile'
+import { ARCHITECTURE, ARCH_SHAPES, CHANNELS, MODEL_CONFIG, THRESHOLD } from '../data/model'
+import { EASE, inView, reveal, stagger } from '../motion'
 import './Predict.css'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: (d: number) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] },
-  }),
-}
-
-// Mock input grid — 10 channels, showing a subset for visualization
-const MOCK_CHANNELS = [
-  'SST', 'MSLP', 'U850', 'V850', 'U200', 'V200', 'RH700', 'VORT850', 'OLR', 'TCWV',
-]
-
 export default function Predict() {
+  /* ── Inference state. The model is locked; this mirrors its contract. ── */
   const [probability, setProbability] = useState(0.923)
   const [isRunning, setIsRunning] = useState(false)
-  const threshold = 0.57
+  const [epoch, setEpoch] = useState(0)
+  const threshold = THRESHOLD
   const isCyclone = probability >= threshold
 
   const handleInference = () => {
@@ -27,176 +19,222 @@ export default function Predict() {
     // Simulate inference delay
     setTimeout(() => {
       setProbability(0.85 + Math.random() * 0.12)
+      setEpoch((e) => e + 1)
       setIsRunning(false)
     }, 1800)
   }
 
-  return (
-    <div className="predict-page">
-      <Navbar />
+  const margin = probability - threshold
 
-      <div className="predict-layout">
-        <motion.div
-          className="predict-content"
+  return (
+    <div className="predict route-fade">
+      <Nav />
+
+      <div className="shell predict__shell">
+        {/* ── Header ── */}
+        <motion.header
+          className="page-head"
           initial="hidden"
           animate="visible"
+          variants={stagger}
         >
-          {/* Header */}
-          <motion.div className="predict-header" variants={fadeUp} custom={0.1}>
-            <div>
-              <h1 className="predict-header__title">Prediction Interface</h1>
-              <p className="predict-header__subtitle">VayuDrishti CNN v1 · Binary Cyclone Classification</p>
-            </div>
-            <div className="predict-header__badges">
-              <span className="predict-badge predict-badge--locked">MODEL LOCKED</span>
-              <span className="predict-badge predict-badge--hist">HISTORICAL DATA</span>
-            </div>
+          <motion.div variants={reveal} custom={0.05}>
+            <div className="eyebrow">Inference bench</div>
+            <h1 className="page-head__title display">Prediction interface</h1>
+            <p className="page-head__sub prose">
+              VayuDrishti CNN v1 · binary cyclone classification over a ten-channel
+              meteorological window.
+            </p>
           </motion.div>
+          <motion.div className="page-head__badges" variants={reveal} custom={0.14}>
+            <span className="pill pill--lock">
+              <span className="pill__dot" />
+              Model locked
+            </span>
+            <span className="pill">Historical data</span>
+          </motion.div>
+        </motion.header>
 
-          <div className="predict-grid">
-            {/* Input visualization */}
-            <motion.div className="predict-input-card" variants={fadeUp} custom={0.2}>
-              <div className="card-header">
-                <span className="card-header__title">Input Tensor</span>
-                <span className="card-header__meta">[10, 80, 80]</span>
-              </div>
+        <div className="predict__grid">
+          {/* ═══ INPUT ═══ */}
+          <motion.section
+            className="panel bench"
+            initial="hidden"
+            whileInView="visible"
+            viewport={inView}
+            variants={reveal}
+            custom={0.1}
+          >
+            <div className="panel__head">
+              <span className="panel__title">Input tensor</span>
+              <span className="panel__meta">[10, 80, 80] · float32</span>
+            </div>
 
-              <div className="channel-grid">
-                {MOCK_CHANNELS.map((ch, i) => (
-                  <div className="channel-tile" key={ch}>
-                    <div className="channel-tile__vis">
-                      {/* Procedural noise visualization for each channel */}
-                      <svg viewBox="0 0 80 80" className="channel-tile__svg">
-                        <defs>
-                          <filter id={`noise-${i}`}>
-                            <feTurbulence
-                              type="fractalNoise"
-                              baseFrequency={0.02 + i * 0.008}
-                              numOctaves={3}
-                              seed={i * 17 + 42}
-                            />
-                            <feColorMatrix
-                              type="saturate"
-                              values="0"
-                            />
-                          </filter>
-                        </defs>
-                        <rect width="80" height="80" filter={`url(#noise-${i})`} opacity="0.5" />
-                      </svg>
+            <div className="panel__body">
+              <div className="fields">
+                {CHANNELS.map((ch, i) => (
+                  <figure className="field-tile" key={ch.code}>
+                    <div className="field-tile__frame">
+                      <FieldTile channel={ch} index={i} epoch={epoch} />
+                      <span className="field-tile__index readout">{i}</span>
                     </div>
-                    <div className="channel-tile__info">
-                      <span className="channel-tile__index">CH{i}</span>
-                      <span className="channel-tile__name">{ch}</span>
-                    </div>
-                  </div>
+                    <figcaption className="field-tile__cap">
+                      <span className="field-tile__code">{ch.code}</span>
+                      <span className="field-tile__unit">{ch.unit}</span>
+                    </figcaption>
+                    <span className="field-tile__name">{ch.name}</span>
+                  </figure>
                 ))}
               </div>
 
-              <div className="predict-input-note">
-                <span>Mock visualization · Actual channel mapping to be documented from training artifacts</span>
+              <p className="bench__note">
+                Mock fields at the grid&apos;s native 80 × 80 resolution. Channel-to-variable
+                mapping is indicative; the authoritative ordering comes from the training
+                artefacts.
+              </p>
+            </div>
+          </motion.section>
+
+          {/* ═══ RESULT ═══ */}
+          <div className="predict__side">
+            <motion.section
+              className="panel"
+              initial="hidden"
+              whileInView="visible"
+              viewport={inView}
+              variants={reveal}
+              custom={0.18}
+            >
+              <div className="panel__head">
+                <span className="panel__title">Inference result</span>
+                <span className={`panel__meta ${isRunning ? 'panel__meta--busy' : ''}`}>
+                  {isRunning ? 'Processing' : 'Ready'}
+                </span>
               </div>
-            </motion.div>
 
-            {/* Results */}
-            <div className="predict-results">
-              <motion.div className="predict-result-card" variants={fadeUp} custom={0.3}>
-                <div className="card-header">
-                  <span className="card-header__title">Inference Result</span>
-                  <span className={`card-header__status ${isRunning ? 'card-header__status--running' : ''}`}>
-                    {isRunning ? 'PROCESSING' : 'READY'}
-                  </span>
-                </div>
-
-                {/* Big probability display */}
-                <div className="prob-display">
-                  <span className="prob-display__label">P(CYCLONE)</span>
-                  <span className={`prob-display__value ${isCyclone ? 'prob-display__value--positive' : 'prob-display__value--negative'}`}>
+              <div className="panel__body">
+                <div className="verdict-big">
+                  <span className="label">P(cyclone)</span>
+                  <motion.span
+                    key={probability}
+                    className={`verdict-big__value readout ${isCyclone ? 'is-positive' : 'is-negative'}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: EASE }}
+                  >
                     {probability.toFixed(4)}
-                  </span>
-                  <span className={`prob-display__class ${isCyclone ? 'prob-display__class--positive' : 'prob-display__class--negative'}`}>
-                    {isCyclone ? '● CYCLONE' : '○ NON-CYCLONE'}
+                  </motion.span>
+                  <span className={`verdict-big__class ${isCyclone ? 'is-positive' : 'is-negative'}`}>
+                    <span className="pill__dot" />
+                    {isCyclone ? 'Cyclone' : 'Non-cyclone'}
                   </span>
                 </div>
 
-                {/* Threshold bar */}
-                <div className="threshold-bar">
-                  <div className="threshold-bar__labels">
-                    <span>0.0</span>
-                    <span>THRESHOLD: {threshold}</span>
-                    <span>1.0</span>
+                {/* Threshold scale */}
+                <div className="scale">
+                  <div className="scale__ticks">
+                    <span className="label">0.0</span>
+                    <span className="label scale__ticks-mid">threshold {threshold}</span>
+                    <span className="label">1.0</span>
                   </div>
-                  <div className="threshold-bar__track">
-                    <div className="threshold-bar__fill" style={{ width: `${probability * 100}%` }} />
-                    <div className="threshold-bar__marker" style={{ left: `${threshold * 100}%` }} />
-                    <div className="threshold-bar__needle" style={{ left: `${probability * 100}%` }} />
+
+                  <div className="scale__track">
+                    <motion.span
+                      className="scale__fill"
+                      animate={{ scaleX: probability }}
+                      transition={{ duration: 0.9, ease: EASE }}
+                    />
+                    <span className="scale__threshold" style={{ left: `${threshold * 100}%` }} />
+                    <motion.span
+                      className="scale__needle"
+                      animate={{ left: `${probability * 100}%` }}
+                      transition={{ duration: 0.9, ease: EASE }}
+                    />
                   </div>
-                  <div className="threshold-bar__zones">
-                    <span>NON-CYCLONE</span>
-                    <span>CYCLONE</span>
+
+                  <div className="scale__zones">
+                    <span className="label">Non-cyclone</span>
+                    <span className="label">Cyclone</span>
                   </div>
+                </div>
+
+                <div className="kv">
+                  <span className="kv__k">Margin over threshold</span>
+                  <span className="kv__v" style={{ color: margin >= 0 ? 'var(--positive)' : 'var(--negative)' }}>
+                    {margin >= 0 ? '+' : ''}{margin.toFixed(4)}
+                  </span>
                 </div>
 
                 <button
-                  className="predict-run-btn"
+                  className={`run ${isRunning ? 'run--busy' : ''}`}
                   onClick={handleInference}
                   disabled={isRunning}
                   id="btn-run-inference"
                 >
-                  {isRunning ? 'RUNNING INFERENCE...' : 'RUN INFERENCE (MOCK)'}
+                  <span className="run__label">
+                    {isRunning ? 'Running inference' : 'Run inference'}
+                  </span>
+                  <span className="run__tag">mock</span>
+                  {isRunning && <span className="run__progress" />}
                 </button>
-              </motion.div>
+              </div>
+            </motion.section>
 
-              {/* Model details */}
-              <motion.div className="predict-detail-card" variants={fadeUp} custom={0.4}>
-                <div className="card-header">
-                  <span className="card-header__title">Model Configuration</span>
-                </div>
-                <div className="detail-rows">
-                  {[
-                    ['MODEL', 'VayuDrishti CNN v1'],
-                    ['FRAMEWORK', 'PyTorch'],
-                    ['ARCHITECTURE', '4-layer CNN'],
-                    ['PARAMETERS', '317,665'],
-                    ['INPUT SHAPE', '[10, 80, 80]'],
-                    ['OUTPUT', 'Binary probability'],
-                    ['THRESHOLD', '0.57'],
-                    ['CHECKPOINT', 'checkpoint["model"]'],
-                    ['TEST AUC', '0.9469'],
-                    ['STATUS', 'LOCKED'],
-                  ].map(([label, value]) => (
-                    <div className="detail-row" key={label}>
-                      <span className="detail-row__label">{label}</span>
-                      <span className="detail-row__value">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
+            {/* ═══ CONFIG ═══ */}
+            <motion.section
+              className="panel"
+              initial="hidden"
+              whileInView="visible"
+              viewport={inView}
+              variants={reveal}
+              custom={0.26}
+            >
+              <div className="panel__head">
+                <span className="panel__title">Model configuration</span>
+              </div>
+              <div className="panel__body">
+                {MODEL_CONFIG.map(([k, v]) => (
+                  <div className="kv" key={k}>
+                    <span className="kv__k">{k}</span>
+                    <span className="kv__v">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.section>
 
-              {/* Architecture */}
-              <motion.div className="predict-arch-card" variants={fadeUp} custom={0.5}>
-                <div className="card-header">
-                  <span className="card-header__title">Architecture</span>
-                </div>
-                <div className="arch-flow">
-                  {[
-                    'Conv2D(10→32) · BN · ReLU · MaxPool',
-                    'Conv2D(32→64) · BN · ReLU · MaxPool',
-                    'Conv2D(64→128) · BN · ReLU · MaxPool',
-                    'Conv2D(128→192) · BN · ReLU',
-                    'AdaptiveAvgPool2d(1)',
-                    'Flatten · Dropout(0.30)',
-                    'Linear(192→1)',
-                  ].map((layer, i) => (
-                    <div className="arch-layer" key={i}>
-                      <span className="arch-layer__index">{i}</span>
-                      <span className="arch-layer__desc">{layer}</span>
-                    </div>
+            {/* ═══ ARCHITECTURE ═══ */}
+            <motion.section
+              className="panel"
+              initial="hidden"
+              whileInView="visible"
+              viewport={inView}
+              variants={reveal}
+              custom={0.32}
+            >
+              <div className="panel__head">
+                <span className="panel__title">Forward pass</span>
+                <span className="panel__meta">317,665 params</span>
+              </div>
+              <div className="panel__body">
+                <ol className="arch">
+                  {ARCHITECTURE.map((layer, i) => (
+                    <li className="arch__step" key={layer}>
+                      <span className="arch__index readout">{String(i).padStart(2, '0')}</span>
+                      <span className="arch__body">
+                        <span className="arch__op">{layer}</span>
+                        <span className="arch__shape readout">{ARCH_SHAPES[i]}</span>
+                      </span>
+                    </li>
                   ))}
+                </ol>
+                <div className="arch__out">
+                  <span className="label">Sigmoid</span>
+                  <span className="arch__out-value readout">P(cyclone)</span>
                 </div>
-              </motion.div>
-            </div>
+              </div>
+            </motion.section>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   )

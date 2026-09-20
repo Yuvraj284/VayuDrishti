@@ -1,213 +1,418 @@
-/* ═══════════════════════════════════════════════════
-   VAYUDRISHTI — GLOBAL DESIGN SYSTEM
-   Typography: Instrument Serif · Inter · IBM Plex Mono
-   ═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   VAYUDRISHTI — DESIGN SYSTEM
+   Dark navy atmosphere · cyan accents drawn from the brand mark
+   Instrument Serif (display) · Inter (structure) · IBM Plex Mono (data)
+   ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Palette ── */
-  --bg:          #08090d;
-  --bg-deep:     #050608;
-  --bg-surface:  rgba(14, 16, 24, 0.72);
-  --bg-raised:   rgba(18, 22, 34, 0.85);
-  --border:      rgba(255, 255, 255, 0.06);
-  --border-dim:  rgba(255, 255, 255, 0.03);
+  /* ── Ground: deep navy, never pure black ── */
+  --abyss:        #02060f;
+  --navy-deep:    #040b18;
+  --navy:         #071427;
+  --navy-raised:  #0b1d35;
+  --navy-edge:    #102743;
 
-  /* Atmospheric accent — used SPARINGLY */
-  --atmo:        #8ab4c8;       /* blue-grey, not cyan */
-  --atmo-dim:    rgba(138, 180, 200, 0.35);
-  --atmo-ghost:  rgba(138, 180, 200, 0.08);
+  /* ── Surfaces: flat navy panels, not frosted glass ── */
+  --surface:      #07131f;
+  --surface-alt:  #091827;
+  --surface-hi:   #0d2136;
 
-  /* Data / status */
-  --data-warm:   #c8a87a;       /* amber — storm intensity values */
-  --data-cool:   #7ab0c8;       /* cool blue — pressure / position */
-  --positive:    #6db08a;
-  --negative:    #c87a7a;
-  --warn:        #c8a87a;
+  /* ── Lines ── */
+  --line:         rgba(126, 170, 206, 0.11);
+  --line-soft:    rgba(126, 170, 206, 0.06);
+  --line-strong:  rgba(126, 170, 206, 0.20);
+
+  /* ── Brand accents (from the mark: navy → teal → pale cyan) ── */
+  --cyan:         #5ecfe0;
+  --cyan-bright:  #8fe4f0;
+  --cyan-pale:    #bfeef5;
+  --teal:         #2e8fa8;
+  --teal-deep:    #1b5f78;
+  --brand-navy:   #16457e;
+
+  /* Accent washes — used sparingly */
+  --cyan-12:      rgba(94, 207, 224, 0.12);
+  --cyan-20:      rgba(94, 207, 224, 0.20);
+  --cyan-06:      rgba(94, 207, 224, 0.06);
+
+  /* ── Data semantics ── */
+  --intensity:    #e0a066;   /* storm intensity — warm */
+  --intensity-hi: #e4785c;   /* extreme */
+  --pressure:     #7fb4d4;   /* cool */
+  --positive:     #5fb894;
+  --negative:     #d4726e;
 
   /* ── Text ── */
-  --text-1:  rgba(240, 242, 248, 0.96);   /* primary */
-  --text-2:  rgba(190, 198, 218, 0.72);   /* secondary */
-  --text-3:  rgba(140, 155, 185, 0.45);   /* tertiary */
-  --text-4:  rgba(100, 120, 155, 0.30);   /* ghost */
+  --ink-1: #e9f0f8;
+  --ink-2: rgba(188, 210, 232, 0.72);
+  --ink-3: rgba(142, 174, 206, 0.48);
+  --ink-4: rgba(112, 146, 180, 0.28);
 
-  /* ── Typography ── */
-  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  --font-ui:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono:    'IBM Plex Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  /* ── Type ── */
+  --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono:  'IBM Plex Mono', 'SF Mono', 'JetBrains Mono', monospace;
 
-  /* ── Type Scale ── */
-  --text-xs:   0.625rem;   /* 10px */
-  --text-sm:   0.75rem;    /* 12px */
-  --text-base: 0.875rem;   /* 14px */
-  --text-md:   1rem;       /* 16px */
-  --text-lg:   1.125rem;   /* 18px */
-  --text-xl:   1.25rem;    /* 20px */
-  --text-2xl:  1.5rem;     /* 24px */
-  --text-3xl:  2rem;       /* 32px */
-  --text-4xl:  2.75rem;    /* 44px */
-  --text-5xl:  3.75rem;    /* 60px */
-  --text-6xl:  5rem;       /* 80px */
-
-  /* ── Space ── */
-  --sp-1:  4px;
-  --sp-2:  8px;
-  --sp-3:  12px;
-  --sp-4:  16px;
-  --sp-5:  20px;
-  --sp-6:  24px;
-  --sp-8:  32px;
-  --sp-10: 40px;
-  --sp-12: 48px;
-  --sp-16: 64px;
-  --sp-20: 80px;
-  --sp-24: 96px;
-
-  /* ── Radii ── */
-  --r-sm: 3px;
-  --r-md: 6px;
-  --r-lg: 10px;
+  /* ── Rhythm ── */
+  --gut: clamp(20px, 5vw, 64px);   /* page side gutter */
+  --max: 1360px;                    /* content max width */
 
   /* ── Motion ── */
-  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in:   cubic-bezier(0.7, 0, 0.84, 0);
-  --t-fast:    140ms var(--ease-out);
-  --t-base:    280ms var(--ease-out);
-  --t-slow:    560ms var(--ease-out);
+  --ease:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --t-fast: 140ms var(--ease);
+  --t-base: 300ms var(--ease);
+  --t-slow: 620ms var(--ease);
 
-  /* ── Z-layers ── */
-  --z-base:    1;
-  --z-nav:     100;
-  --z-overlay: 200;
+  /* ── Layers ── */
+  --z-canvas: 0;
+  --z-body:   10;
+  --z-nav:    100;
+  --z-modal:  200;
 }
 
 /* ── Reset ── */
-*, *::before, *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  background: var(--abyss);
 }
 
 body {
-  font-family: var(--font-ui);
-  background: var(--bg);
-  color: var(--text-1);
-  line-height: 1.6;
+  font-family: var(--sans);
+  background: var(--abyss);
+  color: var(--ink-1);
+  line-height: 1.62;
   overflow-x: hidden;
   min-height: 100vh;
+  font-feature-settings: 'ss01' 1, 'cv05' 1;
 }
 
-#root {
-  min-height: 100vh;
-}
+#root { min-height: 100vh; isolation: isolate; }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: rgba(138, 180, 200, 0.15); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(138, 180, 200, 0.28); }
+img, svg, canvas { display: block; max-width: 100%; }
 
-/* ── Selection ── */
-::selection {
-  background: rgba(138, 180, 200, 0.2);
-  color: var(--text-1);
-}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--abyss); }
+::-webkit-scrollbar-thumb { background: rgba(94, 207, 224, 0.16); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(94, 207, 224, 0.3); }
 
-/* ── Base elements ── */
-a {
-  color: var(--atmo);
-  text-decoration: none;
-  transition: color var(--t-fast);
-}
-a:hover { color: var(--text-1); }
+::selection { background: rgba(94, 207, 224, 0.22); color: #fff; }
+
+a { color: inherit; text-decoration: none; }
 
 button {
-  font-family: var(--font-ui);
-  cursor: pointer;
-  border: none;
-  background: none;
+  font: inherit;
   color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
-/* Display headings use serif */
-h1 {
-  font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
+:focus-visible {
+  outline: 1px solid var(--cyan);
+  outline-offset: 3px;
 }
-h2, h3 {
-  font-family: var(--font-ui);
+
+/* ═══════════════════════════════════════════════
+   TYPOGRAPHY PRIMITIVES
+   ═══════════════════════════════════════════════ */
+
+/* Display — serif, for storm names and narrative moments */
+.display {
+  font-family: var(--serif);
   font-weight: 400;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  line-height: 0.96;
+  letter-spacing: -0.015em;
 }
-h4, h5, h6 {
-  font-family: var(--font-ui);
+
+/* Structural headings — tight Inter */
+.heading {
+  font-family: var(--sans);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+/* Micro-label — the workhorse for every data caption */
+.label {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+
+/* Numeric readout */
+.readout {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Body copy at reading measure */
+.prose {
+  font-size: 0.9375rem;
+  line-height: 1.74;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+/* ═══════════════════════════════════════════════
+   SHARED CHROME
+   ═══════════════════════════════════════════════ */
+
+/* Section eyebrow with rule — used across all four pages */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 22px;
+}
+.eyebrow::before {
+  content: '';
+  width: 26px;
+  height: 1px;
+  background: var(--cyan);
+  opacity: 0.55;
+  flex: none;
+}
+
+/* Page container */
+.shell {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gut);
+}
+
+/* Horizontal rule with the product's hairline weight */
+.rule {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+}
+
+/* Status pill — flat, bordered, never a gradient chip */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 0.5875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pill--live { color: var(--cyan); border-color: var(--cyan-20); }
+.pill--lock { color: var(--intensity); border-color: rgba(224, 160, 102, 0.24); }
+
+.pill__dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* Primary / ghost actions */
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 26px;
+  border-radius: 2px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  line-height: 1.3;
+  letter-spacing: 0.01em;
+  transition: background var(--t-base), border-color var(--t-base), color var(--t-base);
+}
+.action--primary {
+  background: var(--cyan);
+  color: #04121c;
+  font-weight: 600;
+}
+.action--primary:hover { background: var(--cyan-bright); }
+.action--ghost {
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+}
+.action--ghost:hover { border-color: var(--cyan); color: var(--cyan); }
+
+.action__arrow { transition: transform var(--t-base); }
+.action:hover .action__arrow { transform: translateX(3px); }
+
+/* Data panel — flat navy, hairline border. No glass, no glow. */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
 }
 
-/* ── Utilities ── */
-.mono { font-family: var(--font-mono); }
-.serif { font-family: var(--font-display); }
-.text-1 { color: var(--text-1); }
-.text-2 { color: var(--text-2); }
-.text-3 { color: var(--text-3); }
-.text-atmo { color: var(--atmo); }
-.text-warm { color: var(--data-warm); }
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.panel__title {
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink-1);
+}
+.panel__meta {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.panel__body { padding: 20px; }
 
-/* ── Backward-compat aliases (Predict / Analytics pages still use old names) ── */
-:root {
-  --bg-primary:       var(--bg);
-  --bg-secondary:     var(--bg-deep);
-  --bg-tertiary:      rgba(14, 18, 28, 0.9);
-  --bg-card:          var(--bg-surface);
-  --bg-card-hover:    var(--bg-raised);
-  --bg-glass:         var(--bg-surface);
-  --bg-glass-border:  var(--border);
-  --cyan-primary:     var(--atmo);
-  --cyan-dim:         var(--atmo-dim);
-  --cyan-glow:        var(--atmo-ghost);
-  --teal-primary:     var(--positive);
-  --teal-dim:         rgba(109, 176, 138, 0.4);
-  --text-primary:     var(--text-1);
-  --text-secondary:   var(--text-2);
-  --text-tertiary:    var(--text-3);
-  --text-accent:      var(--atmo);
-  --font-sans:        var(--font-ui);
-  --space-xs:         var(--sp-1);
-  --space-sm:         var(--sp-2);
-  --space-md:         var(--sp-4);
-  --space-lg:         var(--sp-6);
-  --space-xl:         var(--sp-10);
-  --space-2xl:        var(--sp-16);
-  --space-3xl:        var(--sp-24);
-  --radius-sm:        var(--r-sm);
-  --radius-md:        var(--r-md);
-  --radius-lg:        var(--r-lg);
-  --radius-xl:        12px;
-  --ease-out-expo:    var(--ease-out);
-  --transition-fast:  var(--t-fast);
-  --transition-normal: var(--t-base);
-  --transition-slow:  var(--t-slow);
+/* Key/value row */
+.kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.kv:last-child { border-bottom: 0; }
+.kv__k {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.kv__v {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-/* ── Subtle film grain overlay ── */
+/* Film grain — very subtle, keeps flat navy from banding */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.018;
+  opacity: 0.02;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
+  background-size: 190px 190px;
+}
+
+/* Page-level fade used by the route transition */
+.route-fade { animation: routeIn 620ms var(--ease) both; }
+@keyframes routeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Route suspense fallback ── */
+.route-loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--abyss);
+}
+.route-loading__bar {
+  width: 120px;
+  height: 1px;
+  background: var(--line-strong);
+  position: relative;
+  overflow: hidden;
+}
+.route-loading__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--cyan);
+  transform-origin: left;
+  animation: routeBar 1.1s var(--ease-soft) infinite;
+}
+@keyframes routeBar {
+  0%   { transform: scaleX(0); transform-origin: left; }
+  50%  { transform: scaleX(1); transform-origin: left; }
+  51%  { transform: scaleX(1); transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+
+/* ═══════════════════════════════════════════════
+   PAGE HEADER
+   Shared by Predict and Analytics. Lives here rather than in a
+   page stylesheet because those ship as separate lazy chunks —
+   a class defined in one is not loaded when the other renders.
+   ═══════════════════════════════════════════════ */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 36px;
+}
+.page-head > *:first-child { flex: 1 1 440px; min-width: 0; }
+
+.page-head__title {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  color: var(--ink-1);
+  margin-bottom: 14px;
+}
+.page-head__sub { font-size: 0.9375rem; }
+.page-head__badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 6px;
+  flex: 0 0 auto;
+}
+
+/* Caveat note under a data block */
+.bench__note {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+
+@media (max-width: 560px) {
+  .page-head { align-items: flex-start; }
 }

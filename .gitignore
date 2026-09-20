@@ -15,7 +15,7 @@ node_modules/
 # Build output
 dist
 dist-ssr
-build/
+/build/
 *.local
 
 # Environment & secrets
@@ -27,7 +27,7 @@ build/
 *.crt
 *.p12
 *.keystore
-secrets/
+/secrets/
 secrets.json
 credentials.json
 service-account*.json
@@ -43,9 +43,9 @@ service-account*.json
 *.pkl
 *.joblib
 *.safetensors
-checkpoints/
-weights/
-models/
+/checkpoints/
+/weights/
+/models/
 
 # Datasets
 *.nc
@@ -60,8 +60,8 @@ models/
 *.npz
 *.parquet
 *.feather
-data/
-datasets/
+/data/
+/datasets/
 
 # Caches
 .cache/
@@ -94,3 +94,6 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+# Design reference assets
+design-reference/

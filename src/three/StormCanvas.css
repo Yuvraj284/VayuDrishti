@@ -1,0 +1,25 @@
+/* Storm canvas host.
+   The gradient sits behind the WebGL surface so there is never a black
+   flash before the first frame, and so the fallback still reads as sky. */
+
+.storm-canvas {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 34%, #0a1f36 0%, #051020 42%, #02060f 78%);
+}
+
+.storm-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: pan-y;
+}
+
+.storm-canvas__fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 46% at 50% 44%, rgba(94, 207, 224, 0.10), transparent 70%),
+    radial-gradient(120% 90% at 50% 34%, #0a1f36 0%, #051020 42%, #02060f 78%);
+}
