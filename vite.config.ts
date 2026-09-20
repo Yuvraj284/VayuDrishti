@@ -7,19 +7,16 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // three.js and Leaflet are large and only needed by specific views.
-        // Splitting them keeps the landing entry chunk small and lets the
-        // hero type paint before WebGL is parsed.
+        // Leaflet is only needed by Monitor and framer-motion by every page
+        // but the hero; splitting them keeps the landing entry chunk small.
+        // The storm renderer is plain WebGL and adds no vendor weight.
         manualChunks(id) {
           if (!id.includes('node_modules')) return
-          if (id.includes('three') || id.includes('@react-three')) return 'three'
           if (id.includes('leaflet')) return 'leaflet'
           if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils'))
             return 'motion'
         },
       },
     },
-    // The three chunk is legitimately large; warn later than the default.
-    chunkSizeWarningLimit: 900,
   },
 })

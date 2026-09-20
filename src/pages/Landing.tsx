@@ -1,18 +1,17 @@
-import { Suspense, lazy, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Nav from '../components/layout/Nav'
 import TrackPlot, { ktColor } from '../components/data/TrackPlot'
 import Mark from '../brand/Mark'
+import StormCanvas from '../gl/StormCanvas'
+import { HERO_STAGES } from '../gl/stagePresets'
+import { heroVisual } from '../gl/stormVisual'
 import { useScrollStage } from '../hooks/useScrollStage'
 import { STORMS, intensityLabel, peakKt } from '../data/storms'
 import { HEADLINE_METRICS, TEST_METRICS, THRESHOLD } from '../data/model'
 import { EASE, inView, reveal, revealX, stagger } from '../motion'
 import './Landing.css'
-
-// three.js is the heaviest thing on the page. Keeping it out of the entry
-// chunk lets the hero type paint immediately while WebGL loads behind it.
-const StormCanvas = lazy(() => import('../three/StormCanvas'))
 
 /* ── Storm anatomy, revealed as the camera descends into the eye ── */
 const ANATOMY = [
@@ -56,6 +55,38 @@ export default function Landing() {
 
   const phailin = useMemo(() => STORMS.find((s) => s.id === 'BOB-03-2013')!, [])
   const active = stage > 0 ? ANATOMY[stage - 1] : null
+  const visual = useMemo(() => heroVisual(phailin), [phailin])
+
+  // Callouts are pinned to the storm's live screen position. They are written
+  // straight to the DOM from the render loop — putting the eye position into
+  // React state would re-render the page sixty times a second.
+  const eyeRef = useRef<HTMLDivElement>(null)
+  const wallRef = useRef<HTMLDivElement>(null)
+  const bandRef = useRef<HTMLDivElement>(null)
+
+  const handleFrame = useCallback(
+    (eye: { x: number; y: number; R: number }) => {
+      const place = (el: HTMLDivElement | null, x: number, y: number) => {
+        if (!el) return
+        const off = x < -80 || y < -80 || x > window.innerWidth + 80 || y > window.innerHeight + 80
+        el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`
+        el.style.opacity = off ? '0' : ''
+      }
+
+      place(eyeRef.current, eye.x, eye.y)
+
+      // Callouts sit to the left of the eye so they never collide with the
+      // anatomy card on the right.
+      // The eyewall ring sits at 1.5 x the eye radius in the shader.
+      const rWall = visual.eye * 1.5 * eye.R
+      place(wallRef.current, eye.x + Math.cos(-2.24) * rWall, eye.y + Math.sin(-2.24) * rWall)
+
+      // A representative point out in the rainbands.
+      const rBand = 0.13 * eye.R
+      place(bandRef.current, eye.x + Math.cos(2.32) * rBand, eye.y + Math.sin(2.32) * rBand)
+    },
+    [visual.eye],
+  )
 
   return (
     <div className="landing">
@@ -67,12 +98,44 @@ export default function Landing() {
           ═══════════════════════════════════════════════════════ */}
       <div className="stage" ref={stageRef}>
         <div className="stage__sticky">
-          <Suspense fallback={<div className="stage__poster" />}>
-            <StormCanvas className="stage__canvas" progressRef={progress} intensity={0.92} />
-          </Suspense>
+          <StormCanvas
+            className="stage__canvas"
+            stages={HERO_STAGES}
+            visual={visual}
+            progressRef={progress}
+            onFrame={handleFrame}
+          />
 
           <div className="stage__vignette" />
           <div className="stage__floor" />
+
+          {/* ── Scientific callouts, pinned to the storm itself ── */}
+          <div className={`callouts ${stage >= 1 ? 'callouts--on' : ''}`} aria-hidden="true">
+            <div className="callout callout--eye" ref={eyeRef}>
+              <span className="callout__dot" />
+              <span className="callout__line" />
+              <span className="callout__text">
+                Eye
+                <span className="callout__sub">940 hPa</span>
+              </span>
+            </div>
+            <div className="callout callout--wall" ref={wallRef}>
+              <span className="callout__dot" />
+              <span className="callout__line" />
+              <span className="callout__text">
+                Eyewall
+                <span className="callout__sub">115 kt</span>
+              </span>
+            </div>
+            <div className="callout callout--band" ref={bandRef}>
+              <span className="callout__dot" />
+              <span className="callout__line" />
+              <span className="callout__text">
+                Rainbands
+                <span className="callout__sub">spiral inflow</span>
+              </span>
+            </div>
+          </div>
 
           {/* ── Hero copy ── */}
           <motion.div

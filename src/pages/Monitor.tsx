@@ -1,15 +1,15 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type * as Leaflet from 'leaflet'
 import Nav from '../components/layout/Nav'
 import { ktColor } from '../components/data/TrackPlot'
-import { STORMS, fixLabel, intensityLabel, peakKt, strength, type Storm } from '../data/storms'
+import { STORMS, fixLabel, intensityLabel, peakKt, type Storm } from '../data/storms'
 import { THRESHOLD } from '../data/model'
-import { INSPECT_KEYS } from '../three/cameraPresets'
+import StormCanvas from '../gl/StormCanvas'
+import { INSET_STAGES } from '../gl/stagePresets'
+import { insetVisual } from '../gl/stormVisual'
 import { EASE, reveal, stagger } from '../motion'
 import './Monitor.css'
-
-const StormCanvas = lazy(() => import('../three/StormCanvas'))
 
 type LeafletNS = typeof import('leaflet')
 
@@ -174,6 +174,7 @@ export default function Monitor() {
 
   const activeFix = fix == null ? null : selected.track[fix]
   const peak = useMemo(() => peakKt(selected), [selected])
+  const structure = useMemo(() => insetVisual(selected), [selected])
 
   return (
     <div className="monitor route-fade">
@@ -239,15 +240,7 @@ export default function Monitor() {
 
             {/* 3D structure inset, scaled to this storm's real intensity */}
             <div className="dock__structure">
-              <Suspense fallback={<div className="dock__structure-poster" />}>
-                <StormCanvas
-                  cameraKeys={INSPECT_KEYS}
-                  intensity={strength(selected)}
-                  densityScale={0.46}
-                  showOcean={false}
-                  orbit={0.05}
-                />
-              </Suspense>
+              <StormCanvas stages={INSET_STAGES} visual={structure} compact />
               <span className="dock__structure-cap label">
                 Structure at peak · {intensityLabel(selected.cat)}
               </span>

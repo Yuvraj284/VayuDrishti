@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import Mark from '../../brand/Mark'
+import { useAlerts } from '../../alerts/context'
 import './Nav.css'
 
 const LINKS = [
@@ -17,6 +18,7 @@ interface NavProps {
 export default function Nav({ transparent = false }: NavProps) {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const { prefs, selected, setPanelOpen } = useAlerts()
 
   useEffect(() => {
     if (!transparent) return
@@ -59,6 +61,19 @@ export default function Nav({ transparent = false }: NavProps) {
             <span className="pill__dot" />
             Historical
           </span>
+          <button
+            className={`alerts-btn ${prefs.enabled ? 'alerts-btn--on' : ''}`}
+            onClick={() => setPanelOpen(true)}
+            aria-label="Open cyclone alerts"
+            id="nav-alerts"
+          >
+            Alerts
+            {prefs.enabled ? (
+              <span className="alerts-btn__count">{selected.length}</span>
+            ) : (
+              <span className="alerts-btn__off">off</span>
+            )}
+          </button>
         </div>
 
         <button
@@ -86,6 +101,18 @@ export default function Nav({ transparent = false }: NavProps) {
             {l.label}
           </NavLink>
         ))}
+        <button
+          className="nav__sheet-alerts"
+          onClick={() => {
+            setOpen(false)
+            setPanelOpen(true)
+          }}
+        >
+          Cyclone alerts
+          <span className="alerts-btn__count">
+            {prefs.enabled ? selected.length : 'off'}
+          </span>
+        </button>
         <span className="nav__sheet-mode label">Historical mode · CNN v1</span>
       </div>
     </nav>

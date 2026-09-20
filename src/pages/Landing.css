@@ -33,8 +33,11 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(130% 100% at 50% 44%, transparent 34%, rgba(2, 6, 15, 0.55) 78%, rgba(2, 6, 15, 0.9) 100%),
-    linear-gradient(to right, rgba(2, 6, 15, 0.82) 0%, rgba(2, 6, 15, 0.18) 34%, transparent 58%);
+    /* Top scrim so the transparent nav always clears the storm */
+    linear-gradient(to bottom, rgba(2, 6, 15, 0.8) 0%, rgba(2, 6, 15, 0.25) 9%, transparent 17%),
+    /* Left scrim so the title block always wins over the globe */
+    linear-gradient(to right, rgba(2, 6, 15, 0.94) 0%, rgba(2, 6, 15, 0.78) 26%, rgba(2, 6, 15, 0.22) 42%, transparent 58%),
+    radial-gradient(130% 100% at 58% 44%, transparent 30%, rgba(2, 6, 15, 0.5) 76%, rgba(2, 6, 15, 0.88) 100%);
 }
 
 /* Hands off to the next section without a seam */
@@ -410,7 +413,7 @@
   .stage__vignette {
     background:
       radial-gradient(130% 100% at 50% 46%, transparent 30%, rgba(2, 6, 15, 0.6) 76%, rgba(2, 6, 15, 0.92) 100%),
-      linear-gradient(to bottom, rgba(2, 6, 15, 0.88) 0%, rgba(2, 6, 15, 0.1) 34%, transparent 52%);
+      linear-gradient(to bottom, rgba(2, 6, 15, 0.93) 0%, rgba(2, 6, 15, 0.86) 30%, rgba(2, 6, 15, 0.34) 47%, transparent 64%);
   }
 
   .anatomy {
@@ -436,4 +439,74 @@
   .stage__readout { flex-wrap: wrap; gap: 14px 24px; }
   .hero__actions .action { flex: 1 1 auto; justify-content: center; }
   .track-key__link { margin-left: 0; width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════
+   PINNED CALLOUTS
+   Anchored to the storm's live screen position by the render
+   loop, so they stay on the feature they name through the dive.
+   ═══════════════════════════════════════════════ */
+
+.callouts {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms var(--ease);
+}
+.callouts--on { opacity: 1; }
+
+.callout {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  will-change: transform;
+  transition: opacity 320ms var(--ease);
+}
+
+.callout__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  flex: none;
+  box-shadow: 0 0 0 3px rgba(94, 207, 224, 0.16);
+}
+
+.callout__line {
+  width: 34px;
+  height: 1px;
+  background: linear-gradient(to right, var(--cyan-20), var(--cyan-20));
+  flex: none;
+}
+
+.callout__text {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  white-space: nowrap;
+  padding-left: 9px;
+  text-shadow: 0 1px 10px rgba(2, 6, 15, 0.95);
+}
+.callout__sub {
+  display: block;
+  margin-top: 3px;
+  letter-spacing: 0.14em;
+  color: var(--cyan);
+  text-transform: none;
+}
+
+/* Labels run leftward from their anchor, clear of the anatomy card. */
+.callout { flex-direction: row-reverse; }
+.callout__text { padding-left: 0; padding-right: 9px; text-align: right; }
+
+@media (max-width: 860px) {
+  .callout__line { width: 20px; }
+  .callout__text { font-size: 0.5625rem; letter-spacing: 0.16em; }
 }

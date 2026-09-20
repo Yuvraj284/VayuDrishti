@@ -1,6 +1,8 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import Landing from './pages/Landing'
+import AlertsProvider from './alerts/AlertsProvider'
+import AlertsPanel from './components/alerts/AlertsPanel'
 
 // The landing page is the entry point, so it ships in the first chunk.
 // Everything else — including Leaflet and the analytics charts — is split out.
@@ -27,7 +29,7 @@ function RouteFallback() {
 
 export default function App() {
   return (
-    <>
+    <AlertsProvider>
       <ScrollReset />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
@@ -37,6 +39,8 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
         </Routes>
       </Suspense>
-    </>
+      {/* Available from every route; the trigger lives in the nav. */}
+      <AlertsPanel />
+    </AlertsProvider>
   )
 }

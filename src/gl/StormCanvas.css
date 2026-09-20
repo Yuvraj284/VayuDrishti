@@ -1,0 +1,26 @@
+/* Storm canvas host.
+   The gradient sits behind the WebGL surface so there is never a flash
+   before the first frame, and so a context failure still reads as sky. */
+
+.storm-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(130% 100% at 62% 40%, #0a1f36 0%, #051020 44%, #02060f 80%);
+}
+
+.storm-canvas__el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+
+.storm-canvas__fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(52% 40% at 64% 46%, rgba(94, 207, 224, 0.13), transparent 72%),
+    radial-gradient(130% 100% at 62% 40%, #0a1f36 0%, #051020 44%, #02060f 80%);
+}
