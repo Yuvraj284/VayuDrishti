@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: VayuDrishti V1 cyclone inference API (container-image Lambda + HTTP API)
+
+Parameters:
+  ImageUri:
+    Type: String
+    Description: ECR image URI built and pushed by CodeBuild
+  ModelBucket:
+    Type: String
+    Default: cyclone-12-09-2026
+  ModelKey:
+    Type: String
+    Default: models/v1/best_model.pt
+  StatsKey:
+    Type: String
+    Default: processed/normalization/train_stats.json
+  Threshold:
+    Type: String
+    Default: '0.51'
+    Description: Must stay in step with THRESHOLD in src/data/model.ts
+  AllowOrigin:
+    Type: String
+    Default: http://localhost:5173
+    Description: >-
+      Exact frontend origin. The app is not hosted yet, so this is the Vite dev
+      server; update it to the real origin at rollout rather than widening to '*'.
+
+Globals:
+  Function:
+    Timeout: 30
+    # 2 GB also buys proportionally more CPU, which is what actually shortens
+    # the torch import and the convolution pass.
+    MemorySize: 2048
+    Architectures: [x86_64]
+
+Resources:
+  InferenceApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins: [!Ref AllowOrigin]
+        AllowHeaders: [content-type]
+        AllowMethods: [GET, POST, OPTIONS]
+        MaxAge: 3600
+
+  InferenceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: !Ref ImageUri
+      Environment:
+        Variables:
+          MODEL_BUCKET: !Ref ModelBucket
+          MODEL_KEY: !Ref ModelKey
+          STATS_KEY: !Ref StatsKey
+          THRESHOLD: !Ref Threshold
+          ALLOW_ORIGIN: !Ref AllowOrigin
+      Policies:
+        # Read-only, and scoped to the two objects actually needed.
+        - Statement:
+            - Effect: Allow
+              Action: ['s3:GetObject']
+              Resource:
+                - !Sub 'arn:aws:s3:::${ModelBucket}/${ModelKey}'
+                - !Sub 'arn:aws:s3:::${ModelBucket}/${StatsKey}'
+      Events:
+        Predict:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref InferenceApi
+            Path: /predict
+            Method: POST
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref InferenceApi
+            Path: /health
+            Method: GET
+
+Outputs:
+  ApiUrl:
+    Description: Base URL - set as VITE_API_URL in the frontend
+    Value: !Sub 'https://${InferenceApi}.execute-api.${AWS::Region}.amazonaws.com'
+  FunctionName:
+    Value: !Ref InferenceFunction
+  FunctionArn:
+    Value: !GetAtt InferenceFunction.Arn

@@ -1,0 +1,4 @@
+{
+  "requestContext": { "http": { "method": "POST", "path": "/predict" } },
+  "body": "{\"grid\": [[[0.0]]], \"request_id\": \"shape-error-demo\"}"
+}
