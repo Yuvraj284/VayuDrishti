@@ -28,7 +28,11 @@ Parameters:
 
 Globals:
   Function:
-    Timeout: 30
+    # A cold start pulls the container image, imports torch and downloads the
+    # checkpoint from S3. The first invocation after a deploy measured ~31 s,
+    # which left no headroom against the previous 30 s limit. Warm calls return
+    # in well under a second, so this ceiling only ever applies to a cold start.
+    Timeout: 60
     # 2 GB also buys proportionally more CPU, which is what actually shortens
     # the torch import and the convolution pass.
     MemorySize: 2048
