@@ -3,28 +3,44 @@ import { motion } from 'framer-motion'
 import Nav from '../components/layout/Nav'
 import FieldTile from '../components/data/FieldTile'
 import { ARCHITECTURE, ARCH_SHAPES, CHANNELS, MODEL_CONFIG, THRESHOLD } from '../data/model'
+import { INPUT_SAMPLES, loadSample } from '../data/samples'
+import { API_CONFIGURED, runInference, type InferenceResult } from '../lib/inferenceClient'
 import { EASE, inView, reveal, stagger } from '../motion'
 import './Predict.css'
 
 export default function Predict() {
-  /* ── Inference state. The model is locked; this mirrors its contract. ── */
-  const [probability, setProbability] = useState(0.923)
+  /* ── Inference state. Every figure below comes back from the service, so
+     the page can never disagree with the model it is reporting on. ── */
+  const [result, setResult] = useState<InferenceResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [epoch, setEpoch] = useState(0)
-  const threshold = THRESHOLD
-  const isCyclone = probability >= threshold
+  const [sampleId, setSampleId] = useState(INPUT_SAMPLES[0].id)
 
-  const handleInference = () => {
+  const sample = INPUT_SAMPLES.find((s) => s.id === sampleId) ?? INPUT_SAMPLES[0]
+
+  // Null until a real inference has returned — the page never shows a
+  // placeholder number that could be mistaken for a prediction.
+  const probability = result?.probability ?? null
+  const threshold = result?.threshold ?? THRESHOLD
+  const isCyclone = result?.is_cyclone ?? false
+  const margin = result?.margin ?? null
+
+  const handleInference = async () => {
     setIsRunning(true)
-    // Simulate inference delay
-    setTimeout(() => {
-      setProbability(0.85 + Math.random() * 0.12)
+    setError(null)
+    try {
+      const grid = await loadSample(sample)
+      const res = await runInference(grid, `${sample.id}-${Date.now()}`)
+      setResult(res)
       setEpoch((e) => e + 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'inference failed')
+      setResult(null)
+    } finally {
       setIsRunning(false)
-    }, 1800)
+    }
   }
-
-  const margin = probability - threshold
 
   return (
     <div className="predict route-fade">
@@ -116,17 +132,19 @@ export default function Predict() {
                 <div className="verdict-big">
                   <span className="label">P(cyclone)</span>
                   <motion.span
-                    key={probability}
+                    key={result?.request_id ?? 'idle'}
                     className={`verdict-big__value readout ${isCyclone ? 'is-positive' : 'is-negative'}`}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: EASE }}
                   >
-                    {probability.toFixed(4)}
+                    {probability === null ? '—.————' : probability.toFixed(4)}
                   </motion.span>
                   <span className={`verdict-big__class ${isCyclone ? 'is-positive' : 'is-negative'}`}>
                     <span className="pill__dot" />
-                    {isCyclone ? 'Cyclone' : 'Non-cyclone'}
+                    {result
+                      ? result.prediction.replace(/^./, (c) => c.toUpperCase())
+                      : 'Awaiting inference'}
                   </span>
                 </div>
 
@@ -141,13 +159,13 @@ export default function Predict() {
                   <div className="scale__track">
                     <motion.span
                       className="scale__fill"
-                      animate={{ scaleX: probability }}
+                      animate={{ scaleX: probability ?? 0 }}
                       transition={{ duration: 0.9, ease: EASE }}
                     />
                     <span className="scale__threshold" style={{ left: `${threshold * 100}%` }} />
                     <motion.span
                       className="scale__needle"
-                      animate={{ left: `${probability * 100}%` }}
+                      animate={{ left: `${(probability ?? 0) * 100}%` }}
                       transition={{ duration: 0.9, ease: EASE }}
                     />
                   </div>
@@ -160,23 +178,86 @@ export default function Predict() {
 
                 <div className="kv">
                   <span className="kv__k">Margin over threshold</span>
-                  <span className="kv__v" style={{ color: margin >= 0 ? 'var(--positive)' : 'var(--negative)' }}>
-                    {margin >= 0 ? '+' : ''}{margin.toFixed(4)}
+                  <span
+                    className="kv__v"
+                    style={{
+                      color:
+                        margin === null
+                          ? 'var(--ink-3)'
+                          : margin >= 0
+                            ? 'var(--positive)'
+                            : 'var(--negative)',
+                    }}
+                  >
+                    {margin === null ? '—' : `${margin >= 0 ? '+' : ''}${margin.toFixed(4)}`}
                   </span>
                 </div>
+
+                {/* The browser cannot synthesise a real meteorological window, so
+                    inference runs on archived windows from the held-out test split
+                    rather than on the procedural field previews above. */}
+                <div className="sample-pick">
+                  <span className="row__label">Input window</span>
+                  <div className="chips" role="group" aria-label="Input sample">
+                    {INPUT_SAMPLES.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`chip ${sampleId === s.id ? 'chip--on' : ''}`}
+                        onClick={() => setSampleId(s.id)}
+                        aria-pressed={sampleId === s.id}
+                        disabled={isRunning}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="sample-pick__note">
+                    Held-out test split · ground truth{' '}
+                    {sample.trueLabel === 1 ? 'cyclone' : 'non-cyclone'}. {sample.note}
+                  </span>
+                </div>
+
+                {!API_CONFIGURED && (
+                  <p className="infer-msg infer-msg--warn">
+                    <code>VITE_API_URL</code> is not set, so no inference endpoint is
+                    configured. Copy <code>.env.example</code> to <code>.env.local</code> and
+                    point it at the deployed API.
+                  </p>
+                )}
+
+                {error && (
+                  <p className="infer-msg infer-msg--error" role="alert">
+                    <span className="infer-msg__tag">Inference failed</span>
+                    {error}
+                  </p>
+                )}
 
                 <button
                   className={`run ${isRunning ? 'run--busy' : ''}`}
                   onClick={handleInference}
-                  disabled={isRunning}
+                  disabled={isRunning || !API_CONFIGURED}
                   id="btn-run-inference"
                 >
                   <span className="run__label">
                     {isRunning ? 'Running inference' : 'Run inference'}
                   </span>
-                  <span className="run__tag">mock</span>
+                  <span className="run__tag">live</span>
                   {isRunning && <span className="run__progress" />}
                 </button>
+
+                {result && (
+                  <div className="infer-meta">
+                    <div className="kv">
+                      <span className="kv__k">Served by</span>
+                      <span className="kv__v">{result.model_version}</span>
+                    </div>
+                    <div className="kv">
+                      <span className="kv__k">Server inference</span>
+                      <span className="kv__v">{result.inference_ms} ms</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.section>
 

@@ -282,3 +282,59 @@
   .fields { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
   .field-tile__name { display: none; }
 }
+
+/* ═══════════════════════════════════════════════
+   LIVE INFERENCE CONTROLS
+   ═══════════════════════════════════════════════ */
+
+.sample-pick {
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--line-soft);
+}
+.sample-pick__note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.infer-msg {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-left-width: 2px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  line-height: 1.65;
+}
+.infer-msg code {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--ink-1);
+}
+.infer-msg--warn {
+  border-left-color: var(--intensity);
+  color: var(--ink-2);
+  background: rgba(224, 160, 102, 0.05);
+}
+.infer-msg--error {
+  border-left-color: var(--negative);
+  color: var(--ink-2);
+  background: rgba(212, 114, 110, 0.06);
+}
+.infer-msg__tag {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--negative);
+}
+
+.infer-meta {
+  margin-top: 16px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line-soft);
+}
